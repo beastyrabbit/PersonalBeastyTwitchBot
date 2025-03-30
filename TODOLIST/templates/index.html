@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Beasty Denial Engine</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="container {% if not todos %}empty{% endif %}">
+    <div class="header-container">
+        <h1>Beasty Denial Engine</h1>
+        <h2>Organizing tasks you'll never actually do</h2>
+    </div>
+
+    <div id="todo-groups">
+        {% for group_name, group_todos in todos %}
+        <div class="todo-group">
+            {% if group_name != 'default' %}
+            <h3 class="group-title">{{ group_name | title }}</h3>
+            {% endif %}
+            <ul class="todo-list">
+                {% for todo in group_todos %}
+                <li class="{% if todo.done %}done{% endif %}" data-display-id="{{ todo.display_id }}">
+                    <span>{{ todo.display_id }}. {{ todo.text }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+<script>
+    const source = new EventSource('/stream');
+    source.onmessage = () => {
+        setTimeout(() => window.location.reload(), 2000);
+    };
+</script>
+</body>
+</html>

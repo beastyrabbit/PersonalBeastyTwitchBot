@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Twitch Admin Panel</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <link href="static/css/admin.css" rel="stylesheet">
+</head>
+<body>
+<div class="admin-container">
+    <header>
+        <h1>Twitch Admin Panel <span id="connection-status" class="status-indicator" title="Not connected"></span></h1>
+
+        <div class="admin-controls">
+            <select id="filter-select">
+                <option value="all">All Events</option>
+                <option value="chat">Chat Only</option>
+                <option value="command">Commands Only</option>
+                <option value="redeem">Redeems Only</option>
+                <option value="subscription">Subscriptions Only</option>
+                <option value="raid">Raids Only</option>
+                <option value="system">System Only</option>
+                <option value="helper">Helper Only</option>
+            </select>
+            <div>
+                <button id="toggle-chat-source">
+                    <span class="toggle-icon">⇄</span> Switch to Twitch Chat
+                </button>
+            </div>
+            <!-- Add data attributes to your buttons -->
+            <button data-action="refresh">refresh</button>
+        </div>
+    </header>
+
+
+    <main>
+
+
+        <div class="panel-container">
+            <!-- Left panel: Log of all events -->
+            <div class="event-log-panel">
+                <h2>Event Log</h2>
+                <div id="event-log" class="chat-scrollable-area__message-container ffz-enable"></div>
+                <div id="twitch-chat-container" style="display: none; height: 100%;">
+                    <iframe
+                            src="https://www.twitch.tv/embed/beastyrabbit/chat?parent=localhost&darkpopout"
+                            height="100%"
+                            width="100%"
+                            frameborder="0">
+                    </iframe>
+                </div>
+                <div class="message-input-container">
+                    <input type="text" id="message-input" placeholder="Type your message...">
+                    <button id="send-message-btn" aria-label="Send message">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="22" y1="2" x2="11" y2="13"></line>
+                            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Right panel: Admin actions -->
+            <div class="admin-actions-panel" id="admin-panel">
+                <h2>Actions</h2>
+
+                <!-- Cache Management card -->
+                <div class="action-card">
+                    <h3>Cache Management</h3>
+                    <div class="form-group">
+                        <p class="help-text">This will force the system to refresh all emotes and user data.</p>
+                    </div>
+                    <button data-action="clear_emote_cache">Clear Emote Cache</button>
+                </div>
+
+                <!-- Message history management -->
+                <div class="action-card">
+                    <h3>Message Management</h3>
+                    <div class="form-group">
+                        <label for="delete-days">Delete messages older than:</label>
+                        <div class="input-group">
+                            <input type="number" id="delete-days" min="1" value="30">
+                            <span>days</span>
+                        </div>
+                    </div>
+                    <button id="delete-old-btn">Delete Old Messages</button>
+                </div>
+            </div>
+    </main>
+</div>
+
+<script type="module" src="static/js/main.js"></script>
+</body>
+</html>

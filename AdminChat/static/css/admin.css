@@ -1,0 +1,722 @@
+/* ==========================================================================
+   Base Styles & Reset
+   ========================================================================== */
+* {
+    box-sizing: border-box;
+}
+
+body, html {
+    margin: 0;
+    padding: 0;
+    background-color: #0e0e0e;
+    color: #fff;
+    font-family: 'Inter', sans-serif;
+    height: 100%;
+}
+
+/* ==========================================================================
+   Main Container
+   ========================================================================== */
+.admin-container {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* ==========================================================================
+   Header
+   ========================================================================== */
+header {
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+}
+
+header h1 {
+    font-size: 24px;
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+
+/* Admin controls with toggle button */
+.admin-controls {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+/* ==========================================================================
+   Buttons & Form Controls
+   ========================================================================== */
+button {
+    background-color: #9147ff;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background-color 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+button:hover {
+    background-color: #772ce8;
+}
+
+button:disabled {
+    background-color: #6d6d6d;
+    cursor: not-allowed;
+}
+
+button .toggle-icon {
+    font-size: 14px;
+}
+
+#toggle-admin-panel {
+    background-color: #6441a5; /* Slightly different color to distinguish it */
+}
+
+#toggle-admin-panel.active {
+    background-color: #4b2e96;
+}
+
+#filter-select {
+    background-color: #2c2c35;
+    border: 1px solid #3a3a45;
+    color: #efeff1;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+/* ==========================================================================
+   Status Indicators
+   ========================================================================== */
+/* Connection status indicator */
+.status-indicator {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-left: 10px;
+    vertical-align: middle;
+    background-color: #fc4747; /* Default: not connected (red) */
+    position: relative;
+    top: -2px;
+    transition: background-color 0.3s ease;
+}
+
+.status-indicator.connected {
+    background-color: #19e68c; /* Connected (green) */
+}
+
+.status-indicator.connecting {
+    background-color: #f9fc47; /* Connecting (yellow) */
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 0.5; }
+    50% { opacity: 1; }
+    100% { opacity: 0.5; }
+}
+
+
+/* ==========================================================================
+   Main Content & Layout
+   ========================================================================== */
+main {
+    flex: 1;
+    position: relative;
+}
+
+/* Toggle button for admin panel (hidden by default on large screens) */
+.toggle-panel-btn {
+    display: none;
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    background: #9147ff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 8px 12px;
+    cursor: pointer;
+    z-index: 100;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.toggle-icon {
+    margin-right: 5px;
+}
+
+.panel-container {
+    display: flex;
+    gap: 20px;
+    height: calc(100vh - 200px);
+    max-width: 1400px;
+}
+
+/* ==========================================================================
+   Left Panel - Event Log
+   ========================================================================== */
+.event-log-panel {
+    flex: 2;
+    background-color: #18181b;
+    border-radius: 6px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+}
+
+.event-log-panel h2 {
+    font-size: 18px;
+    margin-top: 0;
+    margin-bottom: 16px;
+}
+
+#event-log {
+    display: block;
+    height: calc(100% - 80px); /* Adjust height to account for input */
+    overflow-y: auto;
+    position: relative;
+    padding-bottom: 4px;
+}
+
+#event-log::after {
+    content: '';
+    display: block;
+    height: 8px;
+}
+
+/* ==========================================================================
+   Right Panel - Admin Actions
+   ========================================================================== */
+.admin-actions-panel {
+    flex: 1;
+    background-color: #18181b;
+    border-radius: 6px;
+    padding: 16px;
+    overflow-y: auto;
+    max-width: 320px;
+}
+
+.admin-actions-panel.active {
+    display: block; /* Shown when active */
+}
+
+.admin-actions-panel h2 {
+    font-size: 18px;
+    margin-top: 0;
+    margin-bottom: 16px;
+}
+
+/* ==========================================================================
+   Action Cards & Form Elements
+   ========================================================================== */
+.action-card {
+    background-color: #1f1f23;
+    border-radius: 4px;
+    padding: 16px;
+    margin-bottom: 16px;
+}
+
+.action-card h3 {
+    margin-top: 0;
+    margin-bottom: 12px;
+    font-size: 16px;
+    font-weight: 500;
+}
+
+.form-group {
+    margin-bottom: 16px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 14px;
+}
+
+.input-group {
+    display: flex;
+    align-items: center;
+    margin-top: 8px;
+}
+
+input[type="text"], input[type="number"], textarea {
+    background-color: #2c2c35;
+    border: 1px solid #3a3a45;
+    color: #efeff1;
+    padding: 8px 12px;
+    border-radius: 4px;
+    width: 100%;
+}
+
+input[type="number"] {
+    width: 80px;
+    margin-right: 8px;
+}
+
+/* Message input styling */
+#message-input {
+    width: 100%;
+    margin-bottom: 10px;
+    resize: vertical;
+    min-height: 50px;
+}
+
+/* Help text for action cards */
+.help-text {
+    font-size: 12px;
+    color: #999;
+    margin-top: 4px;
+    margin-bottom: 12px;
+}
+
+
+/* ==========================================================================
+   Event Messages Styling
+   ========================================================================== */
+.event-item {
+    padding: 10px;
+    border-radius: 4px;
+    border-left: 3px solid #333;
+    background-color: #1a1a1a;
+    margin-bottom: 8px;
+    position: relative;
+}
+
+/* Event types with colored borders */
+.event-item.chat-event {
+    border-left-color: #9147ff; /* purple for chat */
+}
+
+.event-item.command-event {
+    border-left-color: #00b3ff; /* blue for commands */
+}
+
+.event-item.redeem-event {
+    border-left-color: #ff9029; /* orange for redeems */
+}
+
+.event-item.subscription-event, .event-item.sub-event {
+    border-left-color: #19e68c; /* green for subscriptions */
+}
+
+.event-item.raid-event {
+    border-left-color: #f9fc47; /* yellow for raids */
+}
+
+.event-item.admin-event, .event-item.system-event {
+    border-left-color: #fc4747; /* red for system messages */
+}
+
+/* Legacy message class support */
+.message {
+    padding: 8px 0;
+    border-bottom: 1px solid #333;
+    margin-bottom: 4px;
+}
+
+.message:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+/* Event time (timestamp) */
+.event-time {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    color: #888;
+    font-size: 12px;
+}
+
+/* Event header with user info */
+.event-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    padding-right: 80px; /* Make room for the timestamp */
+}
+
+/* Username styling */
+.username {
+    font-weight: bold;
+}
+
+/* Command indicator badge */
+.command-indicator {
+    background-color: rgba(0, 179, 255, 0.2);
+    color: #69c0ff;
+    font-size: 11px;
+    text-transform: uppercase;
+    padding: 2px 5px;
+    border-radius: 3px;
+    margin-left: 5px;
+}
+
+/* Event content */
+.event-content {
+    line-height: 1.4;
+    word-break: break-word;
+    display: inline-block;
+    width: 100%;
+}
+
+.event-content img {
+    vertical-align: middle;
+}
+
+/* Special event content types */
+.subscription-content {
+    color: #19e68c;
+}
+
+.redeem-content {
+    color: #ff9029;
+}
+
+.raid-content {
+    color: #f9fc47;
+}
+
+.system-content {
+    color: #fc4747;
+}
+
+.command-content {
+    color: #00b3ff;
+}
+
+/* ==========================================================================
+   Badge & Emote Styling
+   ========================================================================== */
+.event-badges,
+.chat-badges {
+    display: inline-flex;
+    gap: 3px;
+    align-items: center;
+    margin-right: 4px;
+}
+
+img.chat-badge,
+.chat-badge,
+.event-badges img,
+.badge,
+img.badge,
+.event-badge {
+    height: 18px !important;
+    width: 18px !important;
+    max-height: 18px !important;
+    max-width: 18px !important;
+    object-fit: contain;
+    vertical-align: middle;
+}
+
+img.chat-badge:hover {
+    transform: scale(1.2);
+    transition: transform 0.1s ease;
+}
+
+/* Emote styling */
+.chat-emote {
+    display: inline-block;
+    vertical-align: middle;
+    height: 28px;
+    margin: 0 2px;
+}
+
+.twitch-emote,
+.bttv-emote,
+.7tv-emote,
+  .\37 tv-emote {
+      height: 28px;
+  }
+
+.animated-emote {
+    height: 28px;
+}
+
+.emote-only {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    align-items: center;
+    justify-content: flex-start;
+}
+
+.emote-only .chat-emote {
+    height: 32px;
+}
+
+/* ==========================================================================
+   UI Controls & Utilities
+   ========================================================================== */
+.scroll-bottom-btn {
+    position: absolute;
+    left: 50%;
+    bottom: 60px;
+    transform: translateX(-50%); /* Center horizontally */
+    padding: 5px 10px;
+    border-radius: 15px;
+    background: rgba(55, 55, 60, 0.6); /* Mostly transparent */
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    opacity: 0.5;
+    transition: opacity 0.2s, background-color 0.2s;
+    z-index: 5;
+    border: none;
+}
+
+.scroll-bottom-btn:hover {
+    opacity: 0.9;
+    background: rgba(145, 71, 255, 0.7); /* Slightly purple on hover */
+}
+
+/* ==========================================================================
+   Message Input Container
+   ========================================================================== */
+.message-input-container {
+    display: flex;
+    margin-top: 12px;
+    position: relative;
+    height: 40px;
+    z-index: 5; /* Ensure it stays above content */
+}
+
+#message-input {
+    flex: 1;
+    height: 100%;
+    padding-right: 40px; /* Make room for the button */
+    background-color: #2c2c35;
+    border: 1px solid #3a3a45;
+    color: #efeff1;
+    padding-left: 12px;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+#message-input:focus {
+    outline: none;
+    border-color: #9147ff;
+}
+
+#send-message-btn {
+    position: absolute;
+    right: 0;
+    top: 15%;
+    height: 100%;
+    width: 40px;
+    background-color: transparent;
+    color: #efeff1;
+    border: none;
+    display: grid;
+    align-items: center;
+    justify-content: center;
+    vertical-align: middle;
+    padding: 0;
+    transition: color 0.2s;
+}
+
+#send-message-btn:hover {
+    color: #9147ff;
+    background-color: transparent;
+}
+
+#send-message-btn svg {
+    width: 24px;
+    height: 24px;
+}
+
+/* ==========================================================================
+   Custom Scrollbar Styling
+   ========================================================================== */
+
+/* For the event log specifically */
+#event-log {
+    /* Existing styles */
+    display: block;
+    height: calc(100% - 80px);
+    overflow-y: auto;
+    position: relative;
+    padding-bottom: 4px;
+
+    /* Firefox scrollbar styling */
+    scrollbar-width: thin;
+    scrollbar-color: rgba(70, 70, 70, 0.4) transparent;
+}
+
+/* Webkit browsers (Chrome, Safari, Edge) */
+#event-log::-webkit-scrollbar {
+    width: 6px;
+}
+
+#event-log::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+#event-log::-webkit-scrollbar-thumb {
+    background-color: rgba(70, 70, 70, 0.4);
+    border-radius: 3px;
+}
+
+#event-log::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(100, 100, 100, 0.6);
+}
+
+/* Loading indicator when scrolling to load more */
+.loading-indicator {
+    text-align: center;
+    padding: 8px;
+    background-color: rgba(30, 30, 35, 0.6);
+    color: #9147ff;
+    border-radius: 4px;
+    margin-bottom: 8px;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.loading-indicator::before {
+    content: '';
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    margin-right: 8px;
+    border: 2px solid #9147ff;
+    border-radius: 50%;
+    border-top-color: transparent;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+
+/* ==========================================================================
+   Twtich Chat
+   ========================================================================== */
+/* Container styling */
+
+#twitch-chat-container {
+    display: none; /* Initially hidden */
+}
+
+#twitch-chat-container iframe {
+    border: none;
+}
+
+/* Toggle button */
+.chat-toggle {
+    margin-left: auto;
+}
+
+/* Toggle button styling */
+.toggle-button {
+    background-color: #2c2c35;
+    color: #efeff1;
+    border: none;
+    border-radius: 4px;
+    padding: 6px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: background-color 0.2s;
+}
+
+.toggle-button:hover {
+    background-color: #3a3a45;
+}
+
+.toggle-button.twitch-active {
+    background-color: #9147ff;
+}
+
+.toggle-button .toggle-icon {
+    font-size: 14px;
+}
+
+/* Smooth transitions between chat views */
+#event-log, #twitch-chat-container {
+    transition: opacity 0.2s ease;
+}
+
+
+/* ==========================================================================
+   Responsive Design
+   ========================================================================== */
+@media (max-width: 1024px) {
+    .admin-actions-panel {
+        max-width: 280px;
+    }
+}
+
+@media (max-width: 768px) {
+    .toggle-panel-btn {
+        display: block;
+    }
+
+    .panel-container {
+        flex-direction: column;
+        max-width: 100%;
+    }
+
+    .event-log-panel {
+        /* Update panel layout to ensure input remains visible */
+        display: flex;
+        flex-direction: column;
+        height: calc(100vh - 250px);
+        margin-bottom: 20px;
+    }
+
+    #event-log {
+        flex: 1;
+        min-height: 0; /* Allow it to shrink if needed */
+    }
+
+    .message-input-container {
+        margin-top: auto; /* Push to bottom of container */
+        position: sticky;
+        bottom: 0;
+        background-color: #18181b; /* Match panel background */
+        padding-top: 8px;
+        margin-bottom: 0;
+    }
+
+    .admin-actions-panel {
+      display: none;
+
+
+    .event-time {
+        position: static;
+        display: block;
+        margin-bottom: 5px;
+    }
+
+    .event-header {
+        padding-right: 0;
+    }
+}
+
