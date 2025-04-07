@@ -16,11 +16,11 @@ load_dotenv(env_path)
 redis_client_env = redis.Redis(host='192.168.50.115', port=6379, db=1)
 
 TOKEN_FILE = 'twitch_token.json'
-REDIRECT_URI = 'https://twitchbot_recall.beasty.cloud/callback'
-SCOPES = 'chat:read chat:edit moderator:manage:shoutouts moderator:manage:chat_settings moderator:manage:announcements'
+REDIRECT_URI = 'https://twitch_recall.beasty.cloud/callback'
+SCOPES = 'chat:read chat:edit moderator:manage:shoutouts moderator:manage:chat_settings moderator:manage:announcements moderator:read:followers user:read:follows'
 CLIENT_ID = redis_client_env.get("TWITCH_CLIENT_ID").decode('utf-8')
 CLIENT_SECRET = redis_client_env.get("TWITCH_CLIENT_SECRET").decode('utf-8')
-FORCE_REFRESH = False
+FORCE_REFRESH = True
 
 if CLIENT_ID is None or CLIENT_SECRET is None:
 	raise ValueError('Please set the TWITCH_CLIENT_ID and TWITCH_CLIENT_SECRET environment variables')
