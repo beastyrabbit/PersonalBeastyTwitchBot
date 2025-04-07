@@ -4,16 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="a8717cb1-5c0e-44b4-b875-d2c2bf8b720d" name="Changes" comment="inital commit v2">
-      <change afterPath="$PROJECT_DIR$/opendeck/fuzzy_search/fuzzy_search.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/opendeck/fuzzy_search/search_gui.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/twitchbotV2.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/twitchbotV2.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/manager/main_pc.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/manager/main_pc.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/twitch_api_token_script.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/twitch_api_token_script.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/twitch_api_token_script_main_account.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/twitch_api_token_script_main_account.py" afterDir="false" />
-    </list>
+    <list default="true" id="a8717cb1-5c0e-44b4-b875-d2c2bf8b720d" name="Changes" comment="inital commit v3" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -41,6 +32,12 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
+  <component name="GithubPullRequestsUISettings"><![CDATA[{
+  "selectedUrlAndAccountId": {
+    "url": "https://github.com/beastyrabbit/PersonalBeastyTwitchBot.git",
+    "accountId": "ecad8b3e-b365-4d41-b498-b39c7b36f467"
+  }
+}]]></component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 0
 }</component>
@@ -292,6 +289,7 @@
       <workItem from="1743355025086" duration="1423000" />
       <workItem from="1743956917768" duration="314000" />
       <workItem from="1743957237392" duration="8624000" />
+      <workItem from="1744028933119" duration="316000" />
     </task>
     <task id="LOCAL-00001" summary="inital commit">
       <option name="closed" value="true" />
@@ -309,7 +307,15 @@
       <option name="project" value="LOCAL" />
       <updated>1743355186719</updated>
     </task>
-    <option name="localTasksCounter" value="3" />
+    <task id="LOCAL-00003" summary="inital commit v3">
+      <option name="closed" value="true" />
+      <created>1744029194608</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1744029194608</updated>
+    </task>
+    <option name="localTasksCounter" value="4" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -329,7 +335,8 @@
   <component name="VcsManagerConfiguration">
     <MESSAGE value="inital commit" />
     <MESSAGE value="inital commit v2" />
-    <option name="LAST_COMMIT_MESSAGE" value="inital commit v2" />
+    <MESSAGE value="inital commit v3" />
+    <option name="LAST_COMMIT_MESSAGE" value="inital commit v3" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>

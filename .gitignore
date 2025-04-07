@@ -253,3 +253,4 @@ fabric.properties
 /sound/
 /src/logs/
 /DONOTOPEN/
+/opendeck/fuzzy_search/followed_channels.json
