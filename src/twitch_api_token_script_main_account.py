@@ -20,7 +20,7 @@ REDIRECT_URI = 'https://twitch_recall.beasty.cloud/callback'
 SCOPES = 'chat:read chat:edit moderator:manage:shoutouts moderator:manage:chat_settings moderator:manage:announcements moderator:read:followers user:read:follows'
 CLIENT_ID = redis_client_env.get("TWITCH_CLIENT_ID").decode('utf-8')
 CLIENT_SECRET = redis_client_env.get("TWITCH_CLIENT_SECRET").decode('utf-8')
-FORCE_REFRESH = True
+FORCE_REFRESH = False
 
 if CLIENT_ID is None or CLIENT_SECRET is None:
 	raise ValueError('Please set the TWITCH_CLIENT_ID and TWITCH_CLIENT_SECRET environment variables')

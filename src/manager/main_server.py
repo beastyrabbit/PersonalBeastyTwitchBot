@@ -77,6 +77,7 @@ def cleanup_subprocesses():
     This function is called automatically when the main script exits.
     """
     print("Cleaning up subprocesses...")
+    global running_processes
     for command_name, process in list(running_processes.items()):
         if process.poll() is None:  # Check if process is still running
             try:
@@ -103,7 +104,7 @@ def execute_command(command_name, action):
     if action not in ["start", "stop", "restart"]:
         print(f"Error: Invalid action '{action}'. Must be 'start', 'stop', or 'restart'")
         return False
-
+    global running_processes
     # Handle stop and restart actions for an already running process
     if action in ["stop", "restart"] and command_name in running_processes:
         process = running_processes[command_name]
@@ -187,16 +188,33 @@ for message in pubsub.listen():
     if message["type"] == "message":
         message_obj = json.loads(message['data'].decode('utf-8'))
         print(f"Chat Command: {message_obj.get('command')} and Message: {message_obj.get('content')}")
-        if not message_obj["author"]["moderator"]:
+        if not message_obj["author"]["broadcaster"]:
             send_message_to_redis('🚨 Only the broadcaster can use this command 🚨')
             continue
             # sub commands: git pull, start a service, stop a service, restart a service / manager
+        if "status" in message_obj["content"]:
+            # send a message to the OS to pull the latest code from the git repository
+            msg = "git status"
+            current_directory = os.getcwd()
+            repo = Repo(current_directory)
+            status = repo.git.status()
+            send_message_to_redis(f"Git Status: {status}")
+            # running subprocesses
+            running_processes_list = "\n".join([f"{name}: {proc.pid}" for name, proc in running_processes.items()])
+            send_message_to_redis(f"Running processes: {running_processes_list}")
+
         if "git pull" in message_obj["content"]:
             # send a message to the OS to pull the latest code from the git repository
             msg = "git pull origin/master"
             current_directory = os.getcwd()
             repo = Repo(current_directory)
             repo.remotes.origin.pull('master')
+            # we need to update the venv that is running under uv
+            # Sync environment with uv
+            try:
+                subprocess.run(["uv", "sync"], check=True)
+            except subprocess.CalledProcessError as e:
+                print(f"uv sync failed: {e}")
             restart_manager_service()
         if any(cmd in message_obj["content"] for cmd in ["start", "stop", "restart"]):
             # send a message to the OS to start, stop or restart a service

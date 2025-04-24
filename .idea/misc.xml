@@ -3,5 +3,5 @@
   <component name="Black">
     <option name="sdkName" value="Python 3.13 (twitchbotV2)" />
   </component>
-  <component name="ProjectRootManager" version="2" project-jdk-name="Python 3.13 virtualenv at /mnt/truenas/workspace/projects/python/twitchbotV2/.venv" project-jdk-type="Python SDK" />
+  <component name="ProjectRootManager" version="2" project-jdk-name="uv (twitchbotV2)" project-jdk-type="Python SDK" />
 </project>
