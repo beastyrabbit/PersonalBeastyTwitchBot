@@ -4,12 +4,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="a8717cb1-5c0e-44b4-b875-d2c2bf8b720d" name="Changes" comment="think this is ready for first deployment">
-      <change afterPath="$PROJECT_DIR$/refesh_token.sh" afterDir="false" />
+    <list default="true" id="a8717cb1-5c0e-44b4-b875-d2c2bf8b720d" name="Changes" comment="Cleanup for Token">
+      <change afterPath="$PROJECT_DIR$/delete_both_token.sh" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/twitch_api_token_script.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/twitch_api_token_script.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/twitch_api_token_script_main_account.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/twitch_api_token_script_main_account.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/refesh_token.sh" beforeDir="false" afterPath="$PROJECT_DIR$/refesh_token.sh" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -97,6 +95,7 @@
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.git.unshallow": "true",
     "SHELLCHECK.PATH": "/home/beasty/.local/share/JetBrains/PyCharm2025.1/Shell Script/shellcheck",
+    "Shell Script.refesh_token.sh.executor": "Run",
     "database.data.extractors.current.export.id": "JSON-Groovy.json.groovy",
     "database.data.extractors.current.id": "JSON-Groovy.json.groovy",
     "git-widget-placeholder": "master",
@@ -131,7 +130,7 @@
       <recent name="$PROJECT_DIR$/AdminChat/static/css" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.twitch_api_token_script_main_account">
+  <component name="RunManager" selected="Shell Script.refesh_token.sh">
     <configuration name="lurk" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="twitchbotV2" />
       <option name="ENV_FILES" value="" />
@@ -147,29 +146,6 @@
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/commands/general/lurk.py" />
-      <option name="PARAMETERS" value="" />
-      <option name="SHOW_COMMAND_LINE" value="false" />
-      <option name="EMULATE_TERMINAL" value="false" />
-      <option name="MODULE_MODE" value="false" />
-      <option name="REDIRECT_INPUT" value="false" />
-      <option name="INPUT_FILE" value="" />
-      <method v="2" />
-    </configuration>
-    <configuration name="search_gui" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
-      <module name="twitchbotV2" />
-      <option name="ENV_FILES" value="" />
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/opendeck" />
-      <option name="IS_MODULE_SDK" value="true" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/opendeck/fuzzy_search/search_gui.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -247,20 +223,35 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
+    <configuration name="refesh_token.sh" type="ShConfigurationType" temporary="true">
+      <option name="SCRIPT_TEXT" value="" />
+      <option name="INDEPENDENT_SCRIPT_PATH" value="true" />
+      <option name="SCRIPT_PATH" value="$PROJECT_DIR$/refesh_token.sh" />
+      <option name="SCRIPT_OPTIONS" value="" />
+      <option name="INDEPENDENT_SCRIPT_WORKING_DIRECTORY" value="true" />
+      <option name="SCRIPT_WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="INDEPENDENT_INTERPRETER_PATH" value="true" />
+      <option name="INTERPRETER_PATH" value="/bin/bash" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="EXECUTE_IN_TERMINAL" value="true" />
+      <option name="EXECUTE_SCRIPT_FILE" value="true" />
+      <envs />
+      <method v="2" />
+    </configuration>
     <list>
       <item itemvalue="Python.lurk" />
       <item itemvalue="Python.twitch_api_token_script" />
-      <item itemvalue="Python.search_gui" />
       <item itemvalue="Python.send_shoutout" />
       <item itemvalue="Python.twitch_api_token_script_main_account" />
+      <item itemvalue="Shell Script.refesh_token.sh" />
     </list>
     <recent_temporary>
       <list>
+        <item itemvalue="Shell Script.refesh_token.sh" />
         <item itemvalue="Python.twitch_api_token_script_main_account" />
         <item itemvalue="Python.twitch_api_token_script" />
         <item itemvalue="Python.lurk" />
         <item itemvalue="Python.send_shoutout" />
-        <item itemvalue="Python.search_gui" />
       </list>
     </recent_temporary>
   </component>
@@ -309,7 +300,7 @@
       <workItem from="1745530580432" duration="4340000" />
       <workItem from="1745536161588" duration="1861000" />
       <workItem from="1745538072121" duration="2000" />
-      <workItem from="1745538084486" duration="8671000" />
+      <workItem from="1745538084486" duration="9441000" />
     </task>
     <task id="LOCAL-00001" summary="inital commit">
       <option name="closed" value="true" />
@@ -359,7 +350,15 @@
       <option name="project" value="LOCAL" />
       <updated>1745545484670</updated>
     </task>
-    <option name="localTasksCounter" value="7" />
+    <task id="LOCAL-00007" summary="Cleanup for Token">
+      <option name="closed" value="true" />
+      <created>1745547442309</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1745547442309</updated>
+    </task>
+    <option name="localTasksCounter" value="8" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -382,7 +381,8 @@
     <MESSAGE value="inital commit v3" />
     <MESSAGE value="change ignore file" />
     <MESSAGE value="think this is ready for first deployment" />
-    <option name="LAST_COMMIT_MESSAGE" value="think this is ready for first deployment" />
+    <MESSAGE value="Cleanup for Token" />
+    <option name="LAST_COMMIT_MESSAGE" value="Cleanup for Token" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -407,7 +407,7 @@
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/twitchbotV2$chat_logger.coverage" NAME="chat_logger Coverage Results" MODIFIED="1743353165452" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/commands" />
-    <SUITE FILE_PATH="coverage/twitchbotV2$twitch_api_token_script.coverage" NAME="twitch_api_token_script Coverage Results" MODIFIED="1745547374125" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/src" />
+    <SUITE FILE_PATH="coverage/twitchbotV2$twitch_api_token_script.coverage" NAME="twitch_api_token_script Coverage Results" MODIFIED="1745547975965" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/src" />
     <SUITE FILE_PATH="coverage/twitchbotV2$chatptz_search.coverage" NAME="chatptz_search Coverage Results" MODIFIED="1743962817734" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/opendeck" />
     <SUITE FILE_PATH="coverage/twitchbotV2$roomba.coverage" NAME="roomba Coverage Results" MODIFIED="1742251157069" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/commands/dustdunnies" />
     <SUITE FILE_PATH="coverage/twitchbotV2$main.coverage" NAME="main Coverage Results" MODIFIED="1741980423304" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
@@ -433,7 +433,7 @@
     <SUITE FILE_PATH="coverage/twitchbotV2$BeastyBotMain.coverage" NAME="BeastyBotMain Coverage Results" MODIFIED="1743353209394" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/src" />
     <SUITE FILE_PATH="coverage/twitchbotV2$suika.coverage" NAME="suika Coverage Results" MODIFIED="1743338817324" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/commands/general" />
     <SUITE FILE_PATH="coverage/twitchbotV2$move_fishing.coverage" NAME="move_fishing Coverage Results" MODIFIED="1743350478599" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/commands/obs" />
-    <SUITE FILE_PATH="coverage/twitchbotV2$twitch_api_token_script_main_account.coverage" NAME="twitch_api_token_script_main_account Coverage Results" MODIFIED="1745547382239" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/src" />
+    <SUITE FILE_PATH="coverage/twitchbotV2$twitch_api_token_script_main_account.coverage" NAME="twitch_api_token_script_main_account Coverage Results" MODIFIED="1745547832918" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/src" />
     <SUITE FILE_PATH="coverage/twitchbotV2$steal.coverage" NAME="steal Coverage Results" MODIFIED="1742251398829" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/commands/dustdunnies" />
   </component>
 </project>
