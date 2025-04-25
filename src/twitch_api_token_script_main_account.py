@@ -17,7 +17,7 @@ redis_client_env = redis.Redis(host='192.168.50.115', port=6379, db=1)
 
 TOKEN_FILE = 'twitch_token.json'
 REDIRECT_URI = 'https://twitch_recall.beasty.cloud/callback'
-SCOPES = 'chat:read chat:edit moderator:manage:shoutouts moderator:manage:chat_settings moderator:manage:announcements moderator:read:followers user:read:follows'
+SCOPES="chat:read user:read:chat chat:edit user:write:chat moderator:manage:announcements moderator:manage:chat_messages moderator:manage:shoutouts whispers:read user:manage:whispers moderator:read:chatters channel:read:redemptions channel:manage:redemptions channel:manage:polls channel:manage:predictions moderator:manage:chat_settings channel:moderate channel:manage:moderators channel:manage:vips channel:manage:raids channel:manage:broadcast channel:read:hype_train channel:edit:commercial channel:read:subscriptions user:read:emotes user:read:follows moderator:read:followers user:read:moderated_channels user:read:blocked_users user:manage:blocked_users user:edit:broadcast moderator:manage:banned_users moderator:manage:automod moderator:manage:shield_mode moderator:manage:unban_requests clips:edit channel:read:ads channel:manage:ads moderator:manage:blocked_terms moderator:manage:warnings moderator:read:moderators moderator:read:vips moderator:read:suspicious_users bits:read"
 CLIENT_ID = redis_client_env.get("TWITCH_CLIENT_ID").decode('utf-8')
 CLIENT_SECRET = redis_client_env.get("TWITCH_CLIENT_SECRET").decode('utf-8')
 FORCE_REFRESH = False
