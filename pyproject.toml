@@ -1,0 +1,21 @@
+[project]
+name = "twitchbotv2"
+version = "0.1.0"
+description = "Add your description here"
+requires-python = ">=3.13"
+dependencies = [
+    "dotenv>=0.9.9",
+    "flask>=3.1.0",
+    "gitpython>=3.1.44",
+    "obsws-python>=1.7.1",
+    "pillow>=11.2.1",
+    "pygobject>=3.52.3",
+    "pyperclip>=1.9.0",
+    "pytz>=2025.2",
+    "pyvban>=0.1.1",
+    "redis>=5.2.1",
+    "requests>=2.32.3",
+    "thefuzz>=0.22.1",
+    "twitchio>=2.10.0",
+    "werkzeug>=3.1.3",
+]
