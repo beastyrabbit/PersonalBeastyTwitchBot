@@ -57,7 +57,7 @@ def write_lurk_to_redis(auther_obj):
 for message in pubsub.listen():
     if message["type"] == "message":
         message_obj = json.loads(message['data'].decode('utf-8'))
-        print(f"Chat Command: {message_obj.get('command')} and Message: {message_obj.get('content')}")
+        print(f"Chat Command: {message_obj.get('Command')} and Message: {message_obj.get('content')}")
         write_lurk_to_redis(message_obj["author"])
 
 

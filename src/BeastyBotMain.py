@@ -166,8 +166,8 @@ class Bot(commands.Bot):
 		self._loop = asyncio.get_running_loop()
 		self._loop.create_task(self.send_message_task())
 		self._loop.create_task(self.send_shoutout_task())
-		self._loop.create_task(self.fetch_users_task())
 		self._loop.create_task(self.send_announcement_task())
+		self._loop.create_task(self.fetch_users_task())
 
 	# Event handlers (unchanged)
 	async def event_ready(self):
