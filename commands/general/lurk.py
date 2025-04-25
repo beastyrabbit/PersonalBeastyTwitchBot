@@ -47,7 +47,7 @@ def write_lurk_to_redis(auther_obj):
         redis_client.set(f"global:{auther_obj['name']}", json.dumps(user_obj))
     else:
         redis_client.set(f"global:{auther_obj['name']}", json.dumps({"lurk": 1}))
-    send_message_to_redis(f"{auther_obj['mention']} will be cheering from the shadows")
+    send_message_to_redis(f"{auther_obj['mention']} will be cheering from the shadows!")
     
 
 
