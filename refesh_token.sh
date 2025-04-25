@@ -134,6 +134,7 @@ command -v curl >/dev/null 2>&1 || { echo "Error: curl is required but not insta
 # Main script execution
 echo "$(date): Checking token expiry..."
 
+
 # Check and refresh each token if needed
 for token_key in $REDIS_TOKEN_KEY $REDIS_TOKEN_MAIN_KEY; do
   if get_token_from_redis $token_key > /dev/null; then
@@ -144,5 +145,6 @@ for token_key in $REDIS_TOKEN_KEY $REDIS_TOKEN_MAIN_KEY; do
     echo "Note: $token_key not found in Redis, skipping"
   fi
 done
+
 
 echo "$(date): Token check completed"

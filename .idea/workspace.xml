@@ -4,7 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="a8717cb1-5c0e-44b4-b875-d2c2bf8b720d" name="Changes" comment="Add Refresh Scripts">
+    <list default="true" id="a8717cb1-5c0e-44b4-b875-d2c2bf8b720d" name="Changes" comment="Added waiting time to refresh token script">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/refesh_token.sh" beforeDir="false" afterPath="$PROJECT_DIR$/refesh_token.sh" afterDir="false" />
     </list>
@@ -299,7 +299,7 @@
       <workItem from="1745530580432" duration="4340000" />
       <workItem from="1745536161588" duration="1861000" />
       <workItem from="1745538072121" duration="2000" />
-      <workItem from="1745538084486" duration="9973000" />
+      <workItem from="1745538084486" duration="12698000" />
     </task>
     <task id="LOCAL-00001" summary="inital commit">
       <option name="closed" value="true" />
@@ -365,7 +365,15 @@
       <option name="project" value="LOCAL" />
       <updated>1745548225777</updated>
     </task>
-    <option name="localTasksCounter" value="9" />
+    <task id="LOCAL-00009" summary="Added waiting time to refresh token script">
+      <option name="closed" value="true" />
+      <created>1745548750709</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1745548750709</updated>
+    </task>
+    <option name="localTasksCounter" value="10" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -390,7 +398,8 @@
     <MESSAGE value="think this is ready for first deployment" />
     <MESSAGE value="Cleanup for Token" />
     <MESSAGE value="Add Refresh Scripts" />
-    <option name="LAST_COMMIT_MESSAGE" value="Add Refresh Scripts" />
+    <MESSAGE value="Added waiting time to refresh token script" />
+    <option name="LAST_COMMIT_MESSAGE" value="Added waiting time to refresh token script" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
