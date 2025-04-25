@@ -5,7 +5,6 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="a8717cb1-5c0e-44b4-b875-d2c2bf8b720d" name="Changes" comment="git pull test">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/manager/main_server.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/manager/main_server.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -303,7 +302,7 @@
       <workItem from="1745530580432" duration="4340000" />
       <workItem from="1745536161588" duration="1861000" />
       <workItem from="1745538072121" duration="2000" />
-      <workItem from="1745538084486" duration="15594000" />
+      <workItem from="1745538084486" duration="15641000" />
     </task>
     <task id="LOCAL-00001" summary="inital commit">
       <option name="closed" value="true" />
@@ -409,7 +408,15 @@
       <option name="project" value="LOCAL" />
       <updated>1745554367358</updated>
     </task>
-    <option name="localTasksCounter" value="14" />
+    <task id="LOCAL-00014" summary="git pull test">
+      <option name="closed" value="true" />
+      <created>1745554728923</created>
+      <option name="number" value="00014" />
+      <option name="presentableId" value="LOCAL-00014" />
+      <option name="project" value="LOCAL" />
+      <updated>1745554728923</updated>
+    </task>
+    <option name="localTasksCounter" value="15" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
