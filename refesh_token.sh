@@ -1,7 +1,8 @@
 #!/bin/bash
 
-# Standalone script to refresh Twitch tokens every hour
-# This script ONLY refreshes existing tokens and does not create new ones
+# Script to check token expiry and refresh only if needed
+# Run this every 10 minutes via cron
+# Will refresh tokens only if they expire in less than 30 minutes
 
 # Configuration
 REDIS_HOST="192.168.50.115"
@@ -9,6 +10,7 @@ REDIS_PORT="6379"
 REDIS_DB="1"
 REDIS_TOKEN_KEY="twitch_token"
 REDIS_TOKEN_MAIN_KEY="twitch_token_main"
+EXPIRY_THRESHOLD_MINUTES=30  # Refresh if less than this many minutes until expiry
 
 # Function to get environment variables from Redis
 get_env_from_redis() {
@@ -38,10 +40,47 @@ save_token_to_redis() {
   redis-cli -h $REDIS_HOST -p $REDIS_PORT -n $REDIS_DB SET $token_key "$token_data"
 }
 
+# Function to check if token needs refresh
+needs_refresh() {
+  local token_key=$1
+
+  # Get current token data
+  local token_data=$(get_token_from_redis $token_key)
+  if [ -z "$token_data" ]; then
+    echo "No token data found for $token_key"
+    return 1
+  fi
+
+  # Extract expiration time
+  local expires_at=$(echo $token_data | jq -r '.expires_at')
+  if [ -z "$expires_at" ] || [ "$expires_at" == "null" ]; then
+    echo "No expiration time found for $token_key, will refresh"
+    return 0
+  fi
+
+  # Calculate time until expiry in seconds
+  local expires_timestamp=$(date -d "$expires_at" +%s)
+  local now=$(date +%s)
+  local seconds_until_expiry=$((expires_timestamp - now))
+  local minutes_until_expiry=$((seconds_until_expiry / 60))
+
+  # Log expiry info
+  echo "Token $token_key expires in $minutes_until_expiry minutes"
+
+  # Check if expiry is less than threshold
+  if [ $minutes_until_expiry -lt $EXPIRY_THRESHOLD_MINUTES ]; then
+    echo "Token $token_key will expire soon (less than $EXPIRY_THRESHOLD_MINUTES minutes), needs refresh"
+    return 0
+  else
+    echo "Token $token_key is still valid, no refresh needed"
+    return 1
+  fi
+}
+
 # Function to refresh token using the refresh token
 refresh_token() {
   local token_key=$1
-  echo "$(date): Refreshing token for $token_key..."
+  echo "Refreshing token for $token_key..."
 
   # Get current token data
   local token_data=$(get_token_from_redis $token_key)
@@ -79,7 +118,7 @@ refresh_token() {
 
     # Save the updated token
     save_token_to_redis $token_key "$updated_token_data"
-    echo "$(date): Successfully refreshed token for $token_key: $token_preview"
+    echo "Successfully refreshed token for $token_key: $token_preview"
     return 0
   else
     echo "Error refreshing token: $(echo $response | jq -r '.message // .error')"
@@ -92,22 +131,18 @@ command -v jq >/dev/null 2>&1 || { echo "Error: jq is required but not installed
 command -v redis-cli >/dev/null 2>&1 || { echo "Error: redis-cli is required but not installed. Please install redis-tools."; exit 1; }
 command -v curl >/dev/null 2>&1 || { echo "Error: curl is required but not installed. Please install curl."; exit 1; }
 
-# Main refresh loop
-echo "Starting token refresh service"
-echo "$(date): Initial run"
+# Main script execution
+echo "$(date): Checking token expiry..."
 
-# First refresh twitch_token_main if it exists
-if get_token_from_redis $REDIS_TOKEN_MAIN_KEY > /dev/null; then
-  echo "Refreshing $REDIS_TOKEN_MAIN_KEY"
-  refresh_token $REDIS_TOKEN_MAIN_KEY || echo "Warning: Failed to refresh $REDIS_TOKEN_MAIN_KEY"
-else
-  echo "Note: $REDIS_TOKEN_MAIN_KEY not found in Redis, skipping"
-fi
+# Check and refresh each token if needed
+for token_key in $REDIS_TOKEN_KEY $REDIS_TOKEN_MAIN_KEY; do
+  if get_token_from_redis $token_key > /dev/null; then
+    if needs_refresh $token_key; then
+      refresh_token $token_key || echo "Warning: Failed to refresh $token_key"
+    fi
+  else
+    echo "Note: $token_key not found in Redis, skipping"
+  fi
+done
 
-# Then refresh the regular token if it exists
-if get_token_from_redis $REDIS_TOKEN_KEY > /dev/null; then
-  echo "Refreshing $REDIS_TOKEN_KEY"
-  refresh_token $REDIS_TOKEN_KEY || echo "Warning: Failed to refresh $REDIS_TOKEN_KEY"
-else
-  echo "Note: $REDIS_TOKEN_KEY not found in Redis, skipping"
-fi
+echo "$(date): Token check completed"

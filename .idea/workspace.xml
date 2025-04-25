@@ -4,8 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="a8717cb1-5c0e-44b4-b875-d2c2bf8b720d" name="Changes" comment="Cleanup for Token">
-      <change afterPath="$PROJECT_DIR$/delete_both_token.sh" afterDir="false" />
+    <list default="true" id="a8717cb1-5c0e-44b4-b875-d2c2bf8b720d" name="Changes" comment="Add Refresh Scripts">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/refesh_token.sh" beforeDir="false" afterPath="$PROJECT_DIR$/refesh_token.sh" afterDir="false" />
     </list>
@@ -300,7 +299,7 @@
       <workItem from="1745530580432" duration="4340000" />
       <workItem from="1745536161588" duration="1861000" />
       <workItem from="1745538072121" duration="2000" />
-      <workItem from="1745538084486" duration="9441000" />
+      <workItem from="1745538084486" duration="9973000" />
     </task>
     <task id="LOCAL-00001" summary="inital commit">
       <option name="closed" value="true" />
@@ -358,7 +357,15 @@
       <option name="project" value="LOCAL" />
       <updated>1745547442309</updated>
     </task>
-    <option name="localTasksCounter" value="8" />
+    <task id="LOCAL-00008" summary="Add Refresh Scripts">
+      <option name="closed" value="true" />
+      <created>1745548225777</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1745548225777</updated>
+    </task>
+    <option name="localTasksCounter" value="9" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -382,7 +389,8 @@
     <MESSAGE value="change ignore file" />
     <MESSAGE value="think this is ready for first deployment" />
     <MESSAGE value="Cleanup for Token" />
-    <option name="LAST_COMMIT_MESSAGE" value="Cleanup for Token" />
+    <MESSAGE value="Add Refresh Scripts" />
+    <option name="LAST_COMMIT_MESSAGE" value="Add Refresh Scripts" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -433,7 +441,7 @@
     <SUITE FILE_PATH="coverage/twitchbotV2$BeastyBotMain.coverage" NAME="BeastyBotMain Coverage Results" MODIFIED="1743353209394" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/src" />
     <SUITE FILE_PATH="coverage/twitchbotV2$suika.coverage" NAME="suika Coverage Results" MODIFIED="1743338817324" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/commands/general" />
     <SUITE FILE_PATH="coverage/twitchbotV2$move_fishing.coverage" NAME="move_fishing Coverage Results" MODIFIED="1743350478599" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/commands/obs" />
-    <SUITE FILE_PATH="coverage/twitchbotV2$twitch_api_token_script_main_account.coverage" NAME="twitch_api_token_script_main_account Coverage Results" MODIFIED="1745547832918" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/src" />
+    <SUITE FILE_PATH="coverage/twitchbotV2$twitch_api_token_script_main_account.coverage" NAME="twitch_api_token_script_main_account Coverage Results" MODIFIED="1745548181354" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/src" />
     <SUITE FILE_PATH="coverage/twitchbotV2$steal.coverage" NAME="steal Coverage Results" MODIFIED="1742251398829" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/commands/dustdunnies" />
   </component>
 </project>
