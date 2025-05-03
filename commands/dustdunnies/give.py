@@ -140,7 +140,7 @@ for message in pubsub.listen():
                 send_message_to_redis(f"{message_obj["author"]["mention"]} you need to use the @username to give dustbunnies")
                 continue
             give_dustbunnies(message_obj["author"],give_to_user,amount)
-            if message_obj["author"]["moderator"]:
+            if message_obj["author"]["moderator"] or message_obj["author"]["broadcaster"]:
                 give_dustbunnies_as_mod(message_obj["author"],give_to_user,amount)
             else:
                 send_message_to_redis(f"{message_obj["author"]["mention"]} gave {amount} dustbunnies to {give_to_user}")

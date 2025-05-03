@@ -4,8 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="a8717cb1-5c0e-44b4-b875-d2c2bf8b720d" name="Changes" comment="git pull test">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+    <list default="true" id="a8717cb1-5c0e-44b4-b875-d2c2bf8b720d" name="Changes" comment="fixed give command">
       <change beforePath="$PROJECT_DIR$/commands/dustdunnies/give.py" beforeDir="false" afterPath="$PROJECT_DIR$/commands/dustdunnies/give.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -305,7 +304,7 @@
       <workItem from="1745538072121" duration="2000" />
       <workItem from="1745538084486" duration="16680000" />
       <workItem from="1745576422671" duration="13218000" />
-      <workItem from="1746297573870" duration="431000" />
+      <workItem from="1746297573870" duration="734000" />
     </task>
     <task id="LOCAL-00001" summary="inital commit">
       <option name="closed" value="true" />
@@ -427,7 +426,15 @@
       <option name="project" value="LOCAL" />
       <updated>1745554798251</updated>
     </task>
-    <option name="localTasksCounter" value="16" />
+    <task id="LOCAL-00016" summary="fixed give command">
+      <option name="closed" value="true" />
+      <created>1746298111333</created>
+      <option name="number" value="00016" />
+      <option name="presentableId" value="LOCAL-00016" />
+      <option name="project" value="LOCAL" />
+      <updated>1746298111333</updated>
+    </task>
+    <option name="localTasksCounter" value="17" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -456,7 +463,8 @@
     <MESSAGE value="added porjekt tomlö" />
     <MESSAGE value="pygobject not needed on server" />
     <MESSAGE value="git pull test" />
-    <option name="LAST_COMMIT_MESSAGE" value="git pull test" />
+    <MESSAGE value="fixed give command" />
+    <option name="LAST_COMMIT_MESSAGE" value="fixed give command" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
