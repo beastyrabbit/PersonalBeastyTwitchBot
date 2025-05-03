@@ -49,6 +49,25 @@ def send_message_to_redis(send_message):
 # Helper Functions
 ##########################
 
+def give_dustbunnies_as_mod(user_that_gives,receiving_user,amount_gives):
+    global redis_client
+    # give the User the dustbunnies and remove the @
+    user_that_receiving_lower = receiving_user.lower().replace("@","")
+    if redis_client.exists(f"dustbunnies:{user_that_receiving_lower}"):
+        user_json = redis_client.get(f"dustbunnies:{user_that_receiving_lower}")
+        user = json.loads(user_json)
+        user["collected_dustbunnies"] += amount_gives
+        redis_client.set(f"dustbunnies:{user_that_receiving_lower}", json.dumps(user))
+    else:
+        user = {
+            "name": user_that_receiving_lower,
+            "display_name": receiving_user.replace("@",""),
+            "collected_dustbunnies": amount_gives,
+            "message_count": 0
+        }
+        redis_client.set(f"dustbunnies:{user_that_receiving_lower}", json.dumps(user))
+
+
 def give_dustbunnies(user_that_gives,receiving_user,amount_gives):
     global redis_client
     # check if user that gives has enough dustbunnies
@@ -64,20 +83,20 @@ def give_dustbunnies(user_that_gives,receiving_user,amount_gives):
         send_message_to_redis(f"{user_that_gives["mention"]} does not exist and cant give dustbunnies")
 
     # give the User  the dustbunnies and remove the @
-    user_that_gives_lower = receiving_user.lower().replace("@","")
-    if redis_client.exists(f"dustbunnies:{user_that_gives_lower}"):
-        user_json = redis_client.get(f"dustbunnies:{user_that_gives_lower}")
+    user_that_receiving_lower = receiving_user.lower().replace("@","")
+    if redis_client.exists(f"dustbunnies:{user_that_receiving_lower}"):
+        user_json = redis_client.get(f"dustbunnies:{user_that_receiving_lower}")
         user = json.loads(user_json)
         user["collected_dustbunnies"] += amount_gives
-        redis_client.set(f"dustbunnies:{user_that_gives_lower}", json.dumps(user))
+        redis_client.set(f"dustbunnies:{user_that_receiving_lower}", json.dumps(user))
     else:
         user = {
-            "name": user_that_gives_lower,
+            "name": user_that_receiving_lower,
             "display_name": receiving_user.replace("@",""),
             "collected_dustbunnies": amount_gives,
             "message_count": 0
         }
-        redis_client.set(f"dustbunnies:{user_that_gives_lower}", json.dumps(user))
+        redis_client.set(f"dustbunnies:{user_that_receiving_lower}", json.dumps(user))
 
 def give_all_dustbunnies(amount):
     global redis_client
@@ -121,7 +140,10 @@ for message in pubsub.listen():
                 send_message_to_redis(f"{message_obj["author"]["mention"]} you need to use the @username to give dustbunnies")
                 continue
             give_dustbunnies(message_obj["author"],give_to_user,amount)
-            send_message_to_redis(f"{message_obj["author"]["mention"]} gave {amount} dustbunnies to {give_to_user}")
+            if message_obj["author"]["moderator"]:
+                give_dustbunnies_as_mod(message_obj["author"],give_to_user,amount)
+            else:
+                send_message_to_redis(f"{message_obj["author"]["mention"]} gave {amount} dustbunnies to {give_to_user}")
 
 
 

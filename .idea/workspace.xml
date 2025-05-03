@@ -5,7 +5,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="a8717cb1-5c0e-44b4-b875-d2c2bf8b720d" name="Changes" comment="git pull test">
-      <change beforePath="$PROJECT_DIR$/src/manager/main_server.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/manager/main_server.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/commands/dustdunnies/give.py" beforeDir="false" afterPath="$PROJECT_DIR$/commands/dustdunnies/give.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -60,62 +61,62 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "ASKED_SHARE_PROJECT_CONFIGURATION_FILES": "true",
-    "Python.BeastyBotMain.executor": "Run",
-    "Python.BeastyMiniAdminPost.executor": "Run",
-    "Python.admin_logger.executor": "Run",
-    "Python.app (1).executor": "Run",
-    "Python.app.executor": "Run",
-    "Python.blurscreen.executor": "Run",
-    "Python.brb.executor": "Run",
-    "Python.chat_logger.executor": "Run",
-    "Python.chatptz_search.executor": "Debug",
-    "Python.claude_search.executor": "Run",
-    "Python.command_logger.executor": "Run",
-    "Python.discord.executor": "Run",
-    "Python.fuzzy_search.executor": "Run",
-    "Python.give.executor": "Debug",
-    "Python.lurk.executor": "Run",
-    "Python.main.executor": "Run",
-    "Python.main_pc.executor": "Debug",
-    "Python.move_fishing.executor": "Run",
-    "Python.mute.executor": "Run",
-    "Python.roomba.executor": "Debug",
-    "Python.search_gui.executor": "Run",
-    "Python.send_shoutout.executor": "Run",
-    "Python.shoutout.executor": "Debug",
-    "Python.steal.executor": "Debug",
-    "Python.suika.executor": "Run",
-    "Python.test.executor": "Run",
-    "Python.todolist.executor": "Run",
-    "Python.twitch_api_token_script.executor": "Run",
-    "Python.twitch_api_token_script_main_account.executor": "Run",
-    "Python.unbrb.executor": "Run",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "SHELLCHECK.PATH": "/home/beasty/.local/share/JetBrains/PyCharm2025.1/Shell Script/shellcheck",
-    "Shell Script.refesh_token.sh.executor": "Run",
-    "database.data.extractors.current.export.id": "JSON-Groovy.json.groovy",
-    "database.data.extractors.current.id": "JSON-Groovy.json.groovy",
-    "git-widget-placeholder": "master",
-    "last_opened_file_path": "/mnt/storage/workspace/projects/python/twtichbot",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "run.code.analysis.last.selected.profile": "pProject Default",
-    "settings.editor.selected.configurable": "com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ASKED_SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
+    &quot;Python.BeastyBotMain.executor&quot;: &quot;Run&quot;,
+    &quot;Python.BeastyMiniAdminPost.executor&quot;: &quot;Run&quot;,
+    &quot;Python.admin_logger.executor&quot;: &quot;Run&quot;,
+    &quot;Python.app (1).executor&quot;: &quot;Run&quot;,
+    &quot;Python.app.executor&quot;: &quot;Run&quot;,
+    &quot;Python.blurscreen.executor&quot;: &quot;Run&quot;,
+    &quot;Python.brb.executor&quot;: &quot;Run&quot;,
+    &quot;Python.chat_logger.executor&quot;: &quot;Run&quot;,
+    &quot;Python.chatptz_search.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.claude_search.executor&quot;: &quot;Run&quot;,
+    &quot;Python.command_logger.executor&quot;: &quot;Run&quot;,
+    &quot;Python.discord.executor&quot;: &quot;Run&quot;,
+    &quot;Python.fuzzy_search.executor&quot;: &quot;Run&quot;,
+    &quot;Python.give.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.lurk.executor&quot;: &quot;Run&quot;,
+    &quot;Python.main.executor&quot;: &quot;Run&quot;,
+    &quot;Python.main_pc.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.move_fishing.executor&quot;: &quot;Run&quot;,
+    &quot;Python.mute.executor&quot;: &quot;Run&quot;,
+    &quot;Python.roomba.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.search_gui.executor&quot;: &quot;Run&quot;,
+    &quot;Python.send_shoutout.executor&quot;: &quot;Run&quot;,
+    &quot;Python.shoutout.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.steal.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.suika.executor&quot;: &quot;Run&quot;,
+    &quot;Python.test.executor&quot;: &quot;Run&quot;,
+    &quot;Python.todolist.executor&quot;: &quot;Run&quot;,
+    &quot;Python.twitch_api_token_script.executor&quot;: &quot;Run&quot;,
+    &quot;Python.twitch_api_token_script_main_account.executor&quot;: &quot;Run&quot;,
+    &quot;Python.unbrb.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;SHELLCHECK.PATH&quot;: &quot;/home/beasty/.local/share/JetBrains/PyCharm2025.1/Shell Script/shellcheck&quot;,
+    &quot;Shell Script.refesh_token.sh.executor&quot;: &quot;Run&quot;,
+    &quot;database.data.extractors.current.export.id&quot;: &quot;JSON-Groovy.json.groovy&quot;,
+    &quot;database.data.extractors.current.id&quot;: &quot;JSON-Groovy.json.groovy&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/mnt/storage/workspace/projects/python/twtichbot&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;run.code.analysis.last.selected.profile&quot;: &quot;pProject Default&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   },
-  "keyToStringList": {
-    "DatabaseDriversLRU": [
-      "redis"
+  &quot;keyToStringList&quot;: {
+    &quot;DatabaseDriversLRU&quot;: [
+      &quot;redis&quot;
     ]
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/src" />
@@ -132,7 +133,30 @@
       <recent name="$PROJECT_DIR$/AdminChat/static/css" />
     </key>
   </component>
-  <component name="RunManager" selected="Shell Script.refesh_token.sh">
+  <component name="RunManager" selected="Python.chat_logger">
+    <configuration name="chat_logger" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="twitchbotV2" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/commands" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/commands/chat_logger.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
     <configuration name="lurk" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="twitchbotV2" />
       <option name="ENV_FILES" value="" />
@@ -148,29 +172,6 @@
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/commands/general/lurk.py" />
-      <option name="PARAMETERS" value="" />
-      <option name="SHOW_COMMAND_LINE" value="false" />
-      <option name="EMULATE_TERMINAL" value="false" />
-      <option name="MODULE_MODE" value="false" />
-      <option name="REDIRECT_INPUT" value="false" />
-      <option name="INPUT_FILE" value="" />
-      <method v="2" />
-    </configuration>
-    <configuration name="send_shoutout" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
-      <module name="twitchbotV2" />
-      <option name="ENV_FILES" value="" />
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/src" />
-      <option name="IS_MODULE_SDK" value="true" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/src/send_shoutout.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -241,19 +242,19 @@
       <method v="2" />
     </configuration>
     <list>
+      <item itemvalue="Python.chat_logger" />
       <item itemvalue="Python.lurk" />
       <item itemvalue="Python.twitch_api_token_script" />
-      <item itemvalue="Python.send_shoutout" />
       <item itemvalue="Python.twitch_api_token_script_main_account" />
       <item itemvalue="Shell Script.refesh_token.sh" />
     </list>
     <recent_temporary>
       <list>
+        <item itemvalue="Python.chat_logger" />
         <item itemvalue="Shell Script.refesh_token.sh" />
         <item itemvalue="Python.twitch_api_token_script_main_account" />
         <item itemvalue="Python.twitch_api_token_script" />
         <item itemvalue="Python.lurk" />
-        <item itemvalue="Python.send_shoutout" />
       </list>
     </recent_temporary>
   </component>
@@ -302,7 +303,9 @@
       <workItem from="1745530580432" duration="4340000" />
       <workItem from="1745536161588" duration="1861000" />
       <workItem from="1745538072121" duration="2000" />
-      <workItem from="1745538084486" duration="15641000" />
+      <workItem from="1745538084486" duration="16680000" />
+      <workItem from="1745576422671" duration="13218000" />
+      <workItem from="1746297573870" duration="431000" />
     </task>
     <task id="LOCAL-00001" summary="inital commit">
       <option name="closed" value="true" />
@@ -416,7 +419,15 @@
       <option name="project" value="LOCAL" />
       <updated>1745554728923</updated>
     </task>
-    <option name="localTasksCounter" value="15" />
+    <task id="LOCAL-00015" summary="git pull test">
+      <option name="closed" value="true" />
+      <created>1745554798251</created>
+      <option name="number" value="00015" />
+      <option name="presentableId" value="LOCAL-00015" />
+      <option name="project" value="LOCAL" />
+      <updated>1745554798251</updated>
+    </task>
+    <option name="localTasksCounter" value="16" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -469,14 +480,14 @@
     </breakpoint-manager>
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
-    <SUITE FILE_PATH="coverage/twitchbotV2$chat_logger.coverage" NAME="chat_logger Coverage Results" MODIFIED="1743353165452" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/commands" />
+    <SUITE FILE_PATH="coverage/twitchbotV2$chat_logger.coverage" NAME="chat_logger Coverage Results" MODIFIED="1745582261318" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/commands" />
     <SUITE FILE_PATH="coverage/twitchbotV2$twitch_api_token_script.coverage" NAME="twitch_api_token_script Coverage Results" MODIFIED="1745547975965" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/src" />
     <SUITE FILE_PATH="coverage/twitchbotV2$chatptz_search.coverage" NAME="chatptz_search Coverage Results" MODIFIED="1743962817734" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/opendeck" />
     <SUITE FILE_PATH="coverage/twitchbotV2$roomba.coverage" NAME="roomba Coverage Results" MODIFIED="1742251157069" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/commands/dustdunnies" />
     <SUITE FILE_PATH="coverage/twitchbotV2$main.coverage" NAME="main Coverage Results" MODIFIED="1741980423304" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/twitchbotV2$mute.coverage" NAME="mute Coverage Results" MODIFIED="1743337053817" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/opendeck" />
-    <SUITE FILE_PATH="coverage/twitchbotV2$claude_search.coverage" NAME="search_gui Coverage Results" MODIFIED="1743965039569" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/opendeck" />
     <SUITE FILE_PATH="coverage/twitchbotV2$BeastyMiniAdminPost.coverage" NAME="BeastyMiniAdminPost Coverage Results" MODIFIED="1743353214264" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/src" />
+    <SUITE FILE_PATH="coverage/twitchbotV2$claude_search.coverage" NAME="search_gui Coverage Results" MODIFIED="1743965039569" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/opendeck" />
     <SUITE FILE_PATH="coverage/twitchbotV2$give.coverage" NAME="give Coverage Results" MODIFIED="1742250681505" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/commands/dustdunnies" />
     <SUITE FILE_PATH="coverage/twitchbotV2$unbrb.coverage" NAME="unbrb Coverage Results" MODIFIED="1742251488156" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/commands/admin" />
     <SUITE FILE_PATH="coverage/twitchbotV2$main_pc.coverage" NAME="main_pc Coverage Results" MODIFIED="1743349132724" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/" />
