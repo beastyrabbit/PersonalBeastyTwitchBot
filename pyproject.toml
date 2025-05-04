@@ -8,6 +8,7 @@ dependencies = [
     "flask>=3.1.0",
     "gitpython>=3.1.44",
     "obsws-python>=1.7.1",
+    "openai>=1.77.0",
     "pillow>=11.2.1",
     "pyperclip>=1.9.0",
     "pytz>=2025.2",
