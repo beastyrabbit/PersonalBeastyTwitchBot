@@ -48,37 +48,41 @@ def send_message_to_redis(send_message):
 # Helper Functions
 ##########################
 
-def steal_dustbunnies(user_that_gets_robbed,receiving_user,amount_stolen):
-    global redis_client
-    # check if user that gets stolen from has enough dustbunnies
-    user_that_gets_robbed_lower = user_that_gets_robbed.lower().replace("@","")
-
-    if redis_client.exists(f"dustbunnies:{user_that_gets_robbed_lower}"):
-        user_json = redis_client.get(f"dustbunnies:{user_that_gets_robbed_lower}")
-        user = json.loads(user_json)
-        if user["collected_dustbunnies"] <= amount_stolen:
-            amount_stolen = user["collected_dustbunnies"]
-        user["collected_dustbunnies"] -= amount_stolen
-        redis_client.set(f"dustbunnies:{user_that_gets_robbed_lower}", json.dumps(user))
+def steal_dustbunnies(user_that_gets_robbed, receiving_user, amount_stolen):
+    user_that_gets_robbed_lower = user_that_gets_robbed.lower().replace("@", "")
+    robbed_key = f"user:{user_that_gets_robbed_lower}"
+    if redis_client.exists(robbed_key):
+        robbed_json = redis_client.get(robbed_key)
+        robbed_data = json.loads(robbed_json)
+        if "dustbunnies" not in robbed_data:
+            robbed_data["dustbunnies"] = {}
+        if robbed_data["dustbunnies"].get("collected_dustbunnies", 0) <= amount_stolen:
+            amount_stolen = robbed_data["dustbunnies"].get("collected_dustbunnies", 0)
+        robbed_data["dustbunnies"]["collected_dustbunnies"] = robbed_data["dustbunnies"].get("collected_dustbunnies", 0) - amount_stolen
+        redis_client.set(robbed_key, json.dumps(robbed_data))
     else:
         send_message_to_redis(f"{user_that_gets_robbed} does not have pockets yet")
         return 0
-
-    # User that stole the dustbunnies
-    if redis_client.exists(f"dustbunnies:{receiving_user["name"]}"):
-        user_json = redis_client.get(f"dustbunnies:{receiving_user["name"]}")
-        user = json.loads(user_json)
-        user["collected_dustbunnies"] += amount_stolen
-        redis_client.set(f"dustbunnies:{receiving_user["name"]}", json.dumps(user))
+    receiver_lower = receiving_user["name"].lower()
+    receiver_key = f"user:{receiver_lower}"
+    if redis_client.exists(receiver_key):
+        receiver_json = redis_client.get(receiver_key)
+        receiver_data = json.loads(receiver_json)
     else:
-        user = {
+        receiver_data = {
             "name": receiving_user["name"],
             "display_name": receiving_user["display_name"],
-            "collected_dustbunnies": str(amount_stolen),
-            "message_count": 0
+            "chat": {"count": 0},
+            "command": {"count": 0},
+            "admin": {"count": 0},
+            "dustbunnies": {},
+            "banking": {}
         }
-        redis_client.set(f"dustbunnies:{receiving_user["name"]}", json.dumps(user))
-
+    if "dustbunnies" not in receiver_data:
+        receiver_data["dustbunnies"] = {}
+    # Only update dustbunnies-specific fields
+    receiver_data["dustbunnies"]["collected_dustbunnies"] = receiver_data["dustbunnies"].get("collected_dustbunnies", 0) + amount_stolen
+    redis_client.set(receiver_key, json.dumps(receiver_data))
     return amount_stolen
 
 def generate_rnd_amount_to_steal() -> int:
