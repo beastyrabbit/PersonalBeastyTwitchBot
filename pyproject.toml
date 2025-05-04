@@ -21,3 +21,6 @@ dependencies = [
 
 [project.optional-dependencies]
 gtk = ["pygobject>=3.52.3"]
+
+[tool.poetry.dependencies]
+openai = "*"
