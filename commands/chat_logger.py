@@ -50,11 +50,34 @@ for message in pubsub.listen():
             current_time = time.time()
             message_obj['_score'] = current_time  # Hidden field just for sorting
 
-            # Convert back to JSON for storage
+            # Store in sorted set with timestamp as score (legacy, for history)
             message_json = json.dumps(message_obj)
-
-            # Store in sorted set with timestamp as score
             redis_client.zadd(CHAT_MESSAGES_KEY, {message_json: current_time})
+
+            # --- Unified user JSON logic ---
+            author = message_obj.get('author', {})
+            username = author.get('name') or author.get('display_name')
+            if username:
+                username_lower = username.lower()
+                user_key = f"user:{username_lower}"
+                user_data = redis_client.get(user_key)
+                if user_data:
+                    user_json = json.loads(user_data)
+                else:
+                    user_json = {
+                        "name": username,
+                        "display_name": author.get('display_name', username),
+                        "log": {"chat": 0, "command": 0, "admin": 0, "lurk": 0, "unlurk": 0},
+                        "dustbunnies": {},
+                        "banking": {}
+                    }
+                # Use log sub-object for counters
+                if "log" not in user_json:
+                    user_json["log"] = {"chat": 0, "command": 0, "admin": 0, "lurk": 0, "unlurk": 0}
+                user_json["log"]["chat"] = user_json["log"].get("chat", 0) + 1
+                user_json["log"]["last_message"] = message_obj.get("content", "")
+                user_json["log"]["last_timestamp"] = message_obj["timestamp"]
+                redis_client.set(user_key, json.dumps(user_json))
 
             # Store in type-specific set if needed
             if 'type' in message_obj:
