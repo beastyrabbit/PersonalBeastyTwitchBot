@@ -36,19 +36,23 @@ def send_message_to_redis(send_message):
     redis_client.publish('twitch.chat.send', send_message)
 
 def print_statistics(username):
-    global redis_client
-    username_db = username.lower()[:1]
-    if redis_client.exists(f"dustbunnies:{username_db}"):
-        user_json = redis_client.get(f"dustbunnies:{username_db}")
+    username_lower = username.lower()
+    user_key = f"user:{username_lower}"
+    if redis_client.exists(user_key):
+        user_json = redis_client.get(user_key)
         user_obj = json.loads(user_json)
-        send_message_to_redis(f"{username} has collected {user_obj['collected_dustbunnies']} dustbunnies and has sent {user_obj['message_count']} messages")
+        # Dustbunnies
+        dustbunnies = user_obj.get("dustbunnies", {})
+        collected = dustbunnies.get("collected_dustbunnies", 0)
+        message_count = dustbunnies.get("message_count", 0)
+        send_message_to_redis(f"{username} has collected {collected} dustbunnies and has sent {message_count} messages")
+        # Banking
+        banking = user_obj.get("banking", {})
+        invested = banking.get("bunnies_invested", 0)
+        total_collected = banking.get("total_bunnies_collected", 0)
+        send_message_to_redis(f"{username} has invested {invested} dustbunnies and has collected {total_collected} dustbunnies")
     else:
         send_message_to_redis(f"{username} has not collected any dustbunnies yet")
-    if redis_client.exists(f"banking:{username_db}"):
-        user_json = redis_client.get(f"banking:{username_db}")
-        user_obj = json.loads(user_json)
-        send_message_to_redis(f"{username} has invested {user_obj['bunnies_invested']} dustbunnies and has collected {user_obj['total_bunnies_collected']} dustbunnies")
-    else:
         send_message_to_redis(f"{username} has not invested any dustbunnies yet")
 
 
