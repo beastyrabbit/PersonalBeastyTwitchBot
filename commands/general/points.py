@@ -29,7 +29,7 @@ signal.signal(signal.SIGINT, handle_exit)
 # Helper Functions
 ##########################
 
-def send_message_to_redis(send_message):
+def send_message_to_redis(send_message, command="points"):
     redis_client.publish('twitch.chat.send', send_message)
 
 def print_statistics(username):
@@ -42,21 +42,21 @@ def print_statistics(username):
         dustbunnies = user_obj.get("dustbunnies", {})
         collected = dustbunnies.get("collected_dustbunnies", 0)
         message_count = dustbunnies.get("message_count", 0)
-        send_message_to_redis(f"{username} has collected {collected} dustbunnies and has sent {message_count} messages")
+        send_message_to_redis(f"{username} has collected {collected} dustbunnies and has sent {message_count} messages", command="points")
         # Banking
         banking = user_obj.get("banking", {})
         invested = banking.get("bunnies_invested", 0)
         total_collected = banking.get("total_bunnies_collected", 0)
-        send_message_to_redis(f"{username} has invested {invested} dustbunnies and has collected {total_collected} dustbunnies")
+        send_message_to_redis(f"{username} has invested {invested} dustbunnies and has collected {total_collected} dustbunnies", command="points")
     else:
-        send_message_to_redis(f"{username} has not collected any dustbunnies yet")
-        send_message_to_redis(f"{username} has not invested any dustbunnies yet")
+        send_message_to_redis(f"{username} has not collected any dustbunnies yet", command="points")
+        send_message_to_redis(f"{username} has not invested any dustbunnies yet", command="points")
 
 
 ##########################
 # Main
 ##########################
-send_admin_message_to_redis("Points command is ready to be used")
+send_admin_message_to_redis("Points command is ready to be used", "points")
 for message in pubsub.listen():
     if message["type"] == "message":
         message_obj = json.loads(message['data'].decode('utf-8'))
@@ -67,18 +67,3 @@ for message in pubsub.listen():
             if username_to_check_in_content:
                 username_to_check = username_to_check_in_content
         print_statistics(username_to_check)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

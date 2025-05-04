@@ -80,7 +80,7 @@ def generate_rnd_amount_to_steal() -> int:
 ##########################
 # Main
 ##########################
-send_admin_message_to_redis('Steal command is ready to use')
+send_admin_message_to_redis('Steal command is ready to use', 'steal.py')
 for message in pubsub.listen():
     if message["type"] == "message":
         message_obj = json.loads(message['data'].decode('utf-8'))

@@ -70,7 +70,7 @@ def handle_hug_command(message_obj):
 ##########################
 # Main
 ##########################
-send_admin_message_to_redis("Hug command is ready to be used")
+send_admin_message_to_redis("Hug command is ready to be used", "hug")
 for message in pubsub.listen():
     if message["type"] == "message":
         try:
@@ -80,4 +80,4 @@ for message in pubsub.listen():
                 handle_hug_command(message_obj)
         except Exception as e:
             print(f"Error processing hug command: {e}")
-            send_admin_message_to_redis(f"Error in hug command: {str(e)}") 
+            send_admin_message_to_redis(f"Error in hug command: {str(e)}",) "hug")

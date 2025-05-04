@@ -359,7 +359,7 @@ def handle_accept_command(message_obj):
         for i in range(0, len(ai_message), 450):
             send_message_to_redis(ai_message[i: i + 450])
     except Exception as e:
-        send_admin_message_to_redis(f"AI narration failed: {e}")
+        send_admin_message_to_redis(f"AI narration failed: {e}", command="fight")
     if winner:
         send_message_to_redis(f'@{winner} has won the fight! 🎉')
         # Update stats
@@ -375,7 +375,7 @@ def handle_accept_command(message_obj):
 ##########################
 # Main
 ##########################
-send_admin_message_to_redis("Accept command is ready to be used")
+send_admin_message_to_redis("Accept command is ready to be used", command="fight")
 for message in pubsub.listen():
     if message["type"] == "message":
         try:
@@ -385,4 +385,4 @@ for message in pubsub.listen():
                 handle_accept_command(message_obj)
         except Exception as e:
             print(f"Error processing accept command: {e}")
-            send_admin_message_to_redis(f"Error in accept command: {str(e)}") 
+            send_admin_message_to_redis(f"Error in accept command: {str(e)}", command="fight")

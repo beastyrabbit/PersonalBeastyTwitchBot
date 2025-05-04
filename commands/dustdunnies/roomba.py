@@ -72,7 +72,7 @@ def handle_user_data(user_obj, rnd_number_for_user):
 ##########################
 # Main
 ##########################
-send_admin_message_to_redis("Roomba command is running")
+send_admin_message_to_redis("Roomba command is running", "roomba")
 for message in pubsub.listen():
     if message["type"] == "message":
         message_obj = json.loads(message['data'].decode('utf-8'))

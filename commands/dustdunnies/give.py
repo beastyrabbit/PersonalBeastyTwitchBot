@@ -101,7 +101,7 @@ def give_all_dustbunnies(amount):
 ##########################
 # Main
 ##########################
-send_admin_message_to_redis("Give Command is ready to be used")
+send_admin_message_to_redis("Give Command is ready to be used", "give")
 for message in pubsub.listen():
     if message["type"] == "message":
         message_obj = json.loads(message['data'].decode('utf-8'))

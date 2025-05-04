@@ -105,7 +105,7 @@ def webhook2():
 ##########################
 # Main
 ##########################
-send_admin_message_to_redis("Move Fishing command is ready to be used")
+send_admin_message_to_redis("Move Fishing command is ready to be used", "move_fishing")
 app.run(port=5005, host='0.0.0.0')
 
 

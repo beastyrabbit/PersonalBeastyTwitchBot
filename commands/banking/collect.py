@@ -191,7 +191,7 @@ def collect_interest_for_user(user_obj, force_days=None):
 ##########################
 # Main
 ##########################
-send_admin_message_to_redis("Collect command is running")
+send_admin_message_to_redis("Collect command is running", "collect")
 for message in pubsub.listen():
     if message["type"] == "message":
         message_obj = json.loads(message['data'].decode('utf-8'))

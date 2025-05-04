@@ -84,7 +84,7 @@ def handle_fight_command(message_obj):
 ##########################
 # Main
 ##########################
-send_admin_message_to_redis("Fight command is ready to be used")
+send_admin_message_to_redis("Fight command is ready to be used", "fight")
 for message in pubsub.listen():
     if message["type"] == "message":
         try:
@@ -94,4 +94,4 @@ for message in pubsub.listen():
                 handle_fight_command(message_obj)
         except Exception as e:
             print(f"Error processing fight command: {e}")
-            send_admin_message_to_redis(f"Error in fight command: {str(e)}") 
+            send_admin_message_to_redis(f"Error in fight command: {str(e)}","fight")

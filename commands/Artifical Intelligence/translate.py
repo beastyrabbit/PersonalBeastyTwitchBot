@@ -57,43 +57,43 @@ def translate_text_openai(text):
 def handle_translate_command(message_obj):
     """
     Processes a translation request and sends the response back.
-    
+
     The message must contain text to translate after the '!translate' command.
     """
     author = message_obj.get('author', {})
     username = author.get('display_name', 'Unknown')
     mention = author.get('mention', username)
-    
+
     # Extract text - remove the command if present
     full_content = message_obj.get('content', '').strip()
     text = full_content
     #strip command
     text = text.replace('!translate ','').replace('!tr ', '').strip()
-    
+
     # Check if there's text to translate
     if not text:
         send_message_to_redis(f"{mention} Please provide text to translate. Example: !translate Hello world")
-        send_admin_message_to_redis(f"Empty translation request from {username}")
+        send_admin_message_to_redis(f"Empty translation request from {username}", command="translate")
         return
 
-    send_admin_message_to_redis(f"Translation request from {username}: {text}")
-    
+    send_admin_message_to_redis(f"Translation request from {username}: {text}", command="translate")
+
     try:
         # Perform translation
         translation = translate_text_openai(text)
-        
+
         # Format and send response
         send_message_to_redis(f"{mention} → {translation}")
-        
+
     except Exception as e:
         error_message = str(e)
         send_message_to_redis(f"{mention} Sorry, an error occurred during translation.")
-        send_admin_message_to_redis(f"Translation error for {username}: {error_message}")
+        send_admin_message_to_redis(f"Translation error for {username}: {error_message}", command="translate")
 
 ##########################
 # Main
 ##########################
-send_admin_message_to_redis("Translation command is ready and listening for '!translate'")
+send_admin_message_to_redis("Translation command is ready and listening for '!translate'", command="translate")
 
 for message in pubsub.listen():
     if message["type"] == "message":
@@ -101,18 +101,18 @@ for message in pubsub.listen():
             message_obj = json.loads(message['data'].decode('utf-8'))
             command = message_obj.get('command', '')
             content = message_obj.get('content', '')
-            
+
             # More detailed logging for better diagnostics
             print(f"Translation request: Command={command}, Content={content}")
-            
+
             # Process message
             handle_translate_command(message_obj)
-            
+
         except json.JSONDecodeError as je:
             error_msg = f"JSON error in translation command: {je}"
             print(error_msg)
-            send_admin_message_to_redis(error_msg)
+            send_admin_message_to_redis(error_msg, command="translate")
         except Exception as e:
             error_msg = f"Unexpected error in translation command: {str(e)}"
             print(error_msg)
-            send_admin_message_to_redis(error_msg)
+            send_admin_message_to_redis(error_msg, command="translate")

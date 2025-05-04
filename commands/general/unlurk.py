@@ -58,7 +58,7 @@ def write_unlurk_to_redis(auther_obj):
 ##########################
 # Main
 ##########################
-send_admin_message_to_redis("Unlurk command is ready to be used")
+send_admin_message_to_redis("Unlurk command is ready to be used", "unlurk")
 for message in pubsub.listen():
     if message["type"] == "message":
         message_obj = json.loads(message['data'].decode('utf-8'))

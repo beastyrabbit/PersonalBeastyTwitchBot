@@ -105,7 +105,7 @@ def invest_money(user, invest_amount):
 ##########################
 # Main
 ##########################
-send_admin_message_to_redis("Invest command is running")
+send_admin_message_to_redis("Invest command is running", "invest")
 for message in pubsub.listen():
     if message["type"] == "message":
         message_obj = json.loads(message['data'].decode('utf-8'))

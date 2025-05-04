@@ -19,17 +19,17 @@ def handle_exit(signum, frame):
 ##########################
 # Default Message Methods
 ##########################
-def send_admin_message_to_redis(message):
+def send_admin_message_to_redis(message, command="brb"):
     # Create unified message object
     admin_message_obj = {
         "type": "admin",
         "source": "system",
         "content": message,
     }
-    redis_client.publish('admin.brb.send', json.dumps(admin_message_obj))
+    redis_client.publish(f'admin.{command}.send', json.dumps(admin_message_obj))
 
 
-def send_message_to_redis(send_message):
+def send_message_to_redis(send_message, command="blurscreen"):
     redis_client.publish('twitch.chat.send', send_message)
 
 ##########################
@@ -75,7 +75,7 @@ def toggle_filter(filter_name, state=None):
             else:
                 new_state = state
 
-            send_admin_message_to_redis(f"Filter '{filter_name}' toggled {'on' if new_state else 'off'}")
+            send_admin_message_to_redis(f"Filter '{filter_name}' toggled {'on' if new_state else 'off'}", command="obs")
 
             # Set the filter to the new state
             obs_client.set_source_filter_enabled(current_scene, filter_name, new_state)
@@ -92,20 +92,3 @@ def toggle_filter(filter_name, state=None):
 # Main
 ##########################
 toggle_filter("MyBlur")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

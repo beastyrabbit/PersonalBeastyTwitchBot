@@ -389,7 +389,7 @@ def handle_blackjack(message_obj):
                 
     except Exception as e:
         print(f"Error processing blackjack command: {e}")
-        send_admin_message_to_redis(f"Error in blackjack command: {str(e)}")
+        send_admin_message_to_redis(f"Error in blackjack command: {str(e)}", "blackjack")
 
 def handle_join(state, players, username, username_lower, mention, user_key):
     """Handle the join action for blackjack"""
@@ -648,7 +648,7 @@ def handle_split(state, players, username_lower, mention):
 ##########################
 # Main
 ##########################
-send_admin_message_to_redis("Blackjack command is ready to be used")
+send_admin_message_to_redis("Blackjack command is ready to be used", "blackjack")
 
 # Main message loop
 for message in pubsub.listen():
@@ -659,4 +659,4 @@ for message in pubsub.listen():
             handle_blackjack(message_obj)
         except Exception as e:
             print(f"Error processing command: {e}")
-            send_admin_message_to_redis(f"Error in blackjack command: {str(e)}")
+            send_admin_message_to_redis(f"Error in blackjack command: {str(e)}", "blackjack")

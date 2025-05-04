@@ -49,10 +49,10 @@ def handle_tts_command(message_obj):
     username = author.get('display_name', 'Unknown')
     text = message_obj.get('content', '')
     if not text:
-        send_admin_message_to_redis(f"TTS command received with no text from {username}.")
+        send_admin_message_to_redis(f"TTS command received with no text from {username}.", command="tts")
         return
 
-    send_admin_message_to_redis(f"TTS command received from {username}: {text}")
+    send_admin_message_to_redis(f"TTS command received from {username}: {text}", command="tts")
     try:
         # Generate TTS audio (not played here, just for demonstration)
         audio_bytes = generate_tts_audio(text)
@@ -60,12 +60,12 @@ def handle_tts_command(message_obj):
         send_text_to_voice.send(text)
         send_message_to_redis(f"{username} said: {text}")
     except Exception as e:
-        send_admin_message_to_redis(f"Error processing TTS for {username}: {str(e)}")
+        send_admin_message_to_redis(f"Error processing TTS for {username}: {str(e)}", command="tts")
 
 ##########################
 # Main
 ##########################
-send_admin_message_to_redis("TTS command is ready to be used.")
+send_admin_message_to_redis("TTS command is ready to be used.", command="tts")
 
 for message in pubsub.listen():
     if message["type"] == "message":
@@ -75,4 +75,4 @@ for message in pubsub.listen():
             handle_tts_command(message_obj)
         except Exception as e:
             print(f"Error processing TTS command: {e}")
-            send_admin_message_to_redis(f"Error in TTS command: {str(e)}") 
+            send_admin_message_to_redis(f"Error in TTS command: {str(e)}", command="tts")

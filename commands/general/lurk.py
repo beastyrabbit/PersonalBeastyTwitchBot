@@ -33,7 +33,7 @@ signal.signal(signal.SIGINT, handle_exit)
 # Helper Functions
 ##########################
 
-def send_message_to_redis(send_message):
+def send_message_to_redis(send_message, command="lurk"):
     redis_client.publish('twitch.chat.send', send_message)
 
 def write_lurk_to_redis(auther_obj):
@@ -54,30 +54,15 @@ def write_lurk_to_redis(auther_obj):
         user_obj["log"] = {"chat": 0, "command": 0, "admin": 0, "lurk": 0, "unlurk": 0}
     user_obj["log"]["lurk"] = user_obj["log"].get("lurk", 0) + 1
     redis_client.set(user_key, json.dumps(user_obj))
-    send_message_to_redis(f"{auther_obj['mention']} will be cheering from the shadows!")
-    
+    send_message_to_redis(f"{auther_obj['mention']} will be cheering from the shadows!", command="lurk")
+
 
 ##########################
 # Main
 ##########################
-send_admin_message_to_redis("Lurk command is ready to be used")
+send_admin_message_to_redis("Lurk command is ready to be used", "lurk")
 for message in pubsub.listen():
     if message["type"] == "message":
         message_obj = json.loads(message['data'].decode('utf-8'))
         print(f"Chat Command: {message_obj.get('Command')} and Message: {message_obj.get('content')}")
         write_lurk_to_redis(message_obj["author"])
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

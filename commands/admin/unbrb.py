@@ -38,7 +38,7 @@ def unmute_mic():
 ##########################
 # Main
 ##########################
-send_admin_message_to_redis("UnBRB Command is now active")
+send_admin_message_to_redis("UnBRB Command is now active", command="unbrb")
 for message in pubsub.listen():
     if message["type"] == "message":
         message_obj = json.loads(message['data'].decode('utf-8'))

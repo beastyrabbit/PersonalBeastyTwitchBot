@@ -32,7 +32,7 @@ def send_shoutout_to_redis(send_message):
 ##########################
 # Main
 ##########################
-send_admin_message_to_redis('Shoutout command is ready to use')
+send_admin_message_to_redis('Shoutout command is ready to use', command="shoutout")
 for message in pubsub.listen():
     if message["type"] == "message":
         message_obj = json.loads(message['data'].decode('utf-8'))
@@ -97,24 +97,6 @@ for message in pubsub.listen():
             send_announcement_to_redis(shoutout_message)
             send_shoutout_to_redis(user_id)
             time.sleep(0.2)
-            send_admin_message_to_redis(f"Game: {game_name}")
+            send_admin_message_to_redis(f"Game: {game_name}", command="shoutout")
             time.sleep(0.2)
-            send_admin_message_to_redis(f"Title: {title}")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+            send_admin_message_to_redis(f"Title: {title}", command="shoutout")

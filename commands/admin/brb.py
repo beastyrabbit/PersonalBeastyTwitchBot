@@ -27,7 +27,7 @@ def enable_scene():
     if obs_client is None:
         print("OBS client not connected yet. Scene change will be skipped.")
         return "Scene"  # Return a default scene name
-    
+
     scene_name = "Scene BRB"
     try:
         current_scene = obs_client.get_current_program_scene().current_program_scene_name
@@ -47,7 +47,7 @@ def mute_mic():
 ##########################
 # Main
 ##########################
-send_admin_message_to_redis("BRB Command is ready to be used")
+send_admin_message_to_redis("BRB Command is ready to be used", command="brb")
 for message in pubsub.listen():
     if message["type"] == "message":
         message_obj = json.loads(message['data'].decode('utf-8'))
@@ -64,21 +64,3 @@ for message in pubsub.listen():
         save_scene = enable_scene()
         redis_client.set("last_scene_brb", save_scene)
         mute_mic()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

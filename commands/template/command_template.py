@@ -53,7 +53,7 @@ def handle_command(message_obj):
 ##########################
 # Main
 ##########################
-send_admin_message_to_redis("Example command is ready to be used")
+send_admin_message_to_redis("Example command is ready to be used", command="example")
 
 # Main message loop
 for message in pubsub.listen():
@@ -65,4 +65,4 @@ for message in pubsub.listen():
         except Exception as e:
             print(f"Error processing command: {e}")
             # Optionally send error to admin channel
-            send_admin_message_to_redis(f"Error in example command: {str(e)}")
+            send_admin_message_to_redis(f"Error in example command: {str(e)}", command="example")

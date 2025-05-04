@@ -37,17 +37,17 @@ signal.signal(signal.SIGTERM, handle_exit)  # Handle termination
 ##########################
 # Default Message Methods
 ##########################
-def send_admin_message_to_redis(message):
+def send_admin_message_to_redis(message, command="brb"):
     # Create unified message object
     admin_message_obj = {
         "type": "admin",
         "source": "system",
         "content": message,
     }
-    redis_client.publish('admin.brb.send', json.dumps(admin_message_obj))
+    redis_client.publish(f'admin.{command}.send', json.dumps(admin_message_obj))
 
 
-def send_message_to_redis(send_message):
+def send_message_to_redis(send_message, command="main_pc"):
     redis_client.publish('twitch.chat.send', send_message)
 
 
@@ -177,7 +177,7 @@ def execute_command(command_name, action):
 ##########################
 # Main
 ##########################
-send_admin_message_to_redis('Bunux is online')
+send_admin_message_to_redis('Bunux is online', command="system")
 atexit.register(cleanup_subprocesses)
 for service in services_managed:
     execute_command(command_name=service, action="start")
@@ -187,7 +187,7 @@ for message in pubsub.listen():
         message_obj = json.loads(message['data'].decode('utf-8'))
         print(f"Chat Command: {message_obj.get('command')} and Message: {message_obj.get('content')}")
         if not message_obj["author"]["moderator"]:
-            send_message_to_redis('🚨 Only the broadcaster can use this command 🚨')
+            send_message_to_redis('🚨 Only the broadcaster can use this command 🚨', command="main_pc")
             continue
             # sub commands: git pull, start a service, stop a service, restart a service / manager
         if "git pull" in message_obj["content"]:
@@ -211,20 +211,3 @@ for message in pubsub.listen():
                 for service in services_managed:
                     execute_command(command_name=service, action=action)
                 continue
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

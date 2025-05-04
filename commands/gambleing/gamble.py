@@ -49,7 +49,7 @@ def check_timeout(username):
             return False
         else:
             remaining = COOLDOWN_SECONDS - (datetime.now() - last_used).seconds
-            send_admin_message_to_redis(f"User {username} still has {remaining} seconds in timeout for gambling")
+            send_admin_message_to_redis(f"User {username} still has {remaining} seconds in timeout for gambling", command="gamble")
             return True
 
 def handle_gamble(message_obj):
@@ -59,20 +59,20 @@ def handle_gamble(message_obj):
         username_lower = username.lower()
         user_key = f"user:{username_lower}"
         mention = message_obj["author"]["mention"]
-        
+
         # Get command content (amount to gamble)
         content = message_obj.get('content', '')
         if not content:
             send_message_to_redis(f"{mention} You need to specify an amount to gamble!")
             return
-        
+
         # Parse amount
         amount = content.strip()
-        
+
         # Check user timeout
         if check_timeout(username_lower):
             return
-            
+
         # Get user data
         if redis_client.exists(user_key):
             user_json = redis_client.get(user_key)
@@ -80,7 +80,7 @@ def handle_gamble(message_obj):
         else:
             send_message_to_redis(f"{mention} You don't have any dustbunnies to gamble!")
             return
-            
+
         # Handle 'all' amount
         if amount.lower() == 'all':
             if "dustbunnies" not in user or "collected_dustbunnies" not in user["dustbunnies"]:
@@ -93,12 +93,12 @@ def handle_gamble(message_obj):
             except ValueError:
                 send_message_to_redis(f"{mention} Please enter a valid number of dustbunnies to gamble!")
                 return
-                
+
         # Check if user has enough dustbunnies
         if "dustbunnies" not in user or "collected_dustbunnies" not in user["dustbunnies"] or user["dustbunnies"].get("collected_dustbunnies", 0) < amount:
             send_message_to_redis(f"{mention} You don't have enough dustbunnies to gamble {amount}! 😢")
             return
-            
+
         # Initialize gambling stats if they don't exist
         if "gambling" not in user:
             user["gambling"] = {
@@ -107,13 +107,13 @@ def handle_gamble(message_obj):
                 "wins": 0,
                 "losses": 0
             }
-            
+
         # Record gambling attempt
         user["gambling"]["input"] = user["gambling"].get("input", 0) + amount
-        
+
         # Do the gambling (50/50 chance)
         gamble_result = random.choice([True, False])
-        
+
         # Update user stats based on result
         if gamble_result:
             # User won
@@ -127,18 +127,18 @@ def handle_gamble(message_obj):
             user["dustbunnies"]["collected_dustbunnies"] = user["dustbunnies"].get("collected_dustbunnies", 0) - amount
             user["gambling"]["losses"] = user["gambling"].get("losses", 0) + amount
             send_message_to_redis(f"{mention} You lost {amount} Dustbunnies! 😢 🐰🐻")
-            
+
         # Save updated user data
         redis_client.set(user_key, json.dumps(user))
-            
+
     except Exception as e:
         print(f"Error processing gamble command: {e}")
-        send_admin_message_to_redis(f"Error in gamble command: {str(e)}")
+        send_admin_message_to_redis(f"Error in gamble command: {str(e)}", command="gamble")
 
 ##########################
 # Main
 ##########################
-send_admin_message_to_redis("Gamble command is ready to be used")
+send_admin_message_to_redis("Gamble command is ready to be used", command="gamble")
 
 # Main message loop
 for message in pubsub.listen():
@@ -149,4 +149,4 @@ for message in pubsub.listen():
             handle_gamble(message_obj)
         except Exception as e:
             print(f"Error processing command: {e}")
-            send_admin_message_to_redis(f"Error in gamble command: {str(e)}")
+            send_admin_message_to_redis(f"Error in gamble command: {str(e)}", command="gamble")

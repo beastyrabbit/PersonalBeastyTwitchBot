@@ -33,14 +33,14 @@ signal.signal(signal.SIGINT, handle_exit)
 # Helper Functions
 ##########################
 
-def send_message_to_redis(send_message):
+def send_message_to_redis(send_message, command="timezone"):
     redis_client.publish('twitch.chat.send', send_message)
 
 
 ##########################
 # Main
 ##########################
-send_admin_message_to_redis("Timezone command is ready to be used")
+send_admin_message_to_redis("Timezone command is ready to be used", "timezone")
 
 for message in pubsub.listen():
     if message["type"] == "message":
@@ -67,7 +67,7 @@ for message in pubsub.listen():
             is_dst = german_timezone.localize(datetime.now()).dst() != timedelta(0)
             german_timezone_name = 'Central European Summer Time (CEST)' if is_dst else 'Central European Time (CET)'
 
-            send_message_to_redis(f'The current time in Germany is {german_time} ({german_timezone_name})')
+            send_message_to_redis(f'The current time in Germany is {german_time} ({german_timezone_name})', command="timezone")
 
             # Handle optional custom timezone
             if custom_timezone:
@@ -92,18 +92,3 @@ for message in pubsub.listen():
         except Exception as e:
             print(f'Error in timezone command: {e}')
             send_message_to_redis('An error occurred while processing the timezone. Please try again.')
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

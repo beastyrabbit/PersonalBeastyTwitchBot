@@ -65,7 +65,7 @@ def update_display_ids():
 # Helper Functions
 ##########################
 
-def send_message_to_redis(send_message):
+def send_message_to_redis(send_message, command="todolist"):
     redis_client.publish('twitch.chat.send', send_message)
 
 
@@ -82,14 +82,14 @@ def send_message_to_redis(send_message):
 #``` !todo complete <group> ```
 #``` !todo clear  ``` (clear all)
 
-send_admin_message_to_redis("Todolist command is ready to be used")
+send_admin_message_to_redis("Todolist command is ready to be used", "todolist")
 
 for message in pubsub.listen():
     if message["type"] == "message":
         message_obj = json.loads(message['data'].decode('utf-8'))
         print(f"Chat Command: {message_obj.get('command')} and Message: {message_obj.get('content')}")
         if not message_obj["author"]["broadcaster"]:
-            send_message_to_redis('🚨 Only the broadcaster can use this command 🚨')
+            send_message_to_redis('🚨 Only the broadcaster can use this command 🚨', command="todolist")
             continue
         # first we check what subcommand is being used
         message_content = message_obj.get('content').split()
@@ -169,24 +169,3 @@ for message in pubsub.listen():
             redis_client.publish('todo_updates', 'refresh')
             print("Cleared all todos")
             continue
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

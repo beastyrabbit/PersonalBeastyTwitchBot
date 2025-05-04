@@ -21,17 +21,17 @@ def handle_exit(signum, frame):
 ##########################
 # Default Message Methods
 ##########################
-def send_admin_message_to_redis(message):
+def send_admin_message_to_redis(message, command="brb"):
     # Create unified message object
     admin_message_obj = {
         "type": "admin",
         "source": "system",
         "content": message,
     }
-    redis_client.publish('admin.brb.send', json.dumps(admin_message_obj))
+    redis_client.publish(f'admin.{command}.send', json.dumps(admin_message_obj))
 
 
-def send_message_to_redis(send_message):
+def send_message_to_redis(send_message, command="fuzzy_search"):
     redis_client.publish('twitch.chat.send', send_message)
 
 # Token management functions (unchanged)
@@ -99,14 +99,3 @@ def get_followed_channels():
 # Main
 ##########################
 get_followed_channels()
-
-
-
-
-
-
-
-
-
-
-
