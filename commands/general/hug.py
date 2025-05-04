@@ -1,9 +1,9 @@
 import json
 import random
-import signal
-import sys
+
+from module.shared_redis import pubsub
+
 from module.message_utils import send_admin_message_to_redis, send_message_to_redis, register_exit_handler
-from module.shared import pubsub
 
 ##########################
 # Initialize

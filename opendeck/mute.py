@@ -1,7 +1,5 @@
-import json
-
-from module.message_utils import send_admin_message_to_redis, send_message_to_redis, register_exit_handler
-from module.shared import redis_client, redis_client_env, send_text_to_voice
+from module.message_utils import register_exit_handler
+from module.shared_obs import send_text_to_voice
 
 ##########################
 # Initialize
@@ -19,7 +17,6 @@ register_exit_handler()
 
 
 def mute_mic():
-    global send_text_to_voice
     send_text_to_voice.send("strip[0].mute +=1")
 
 ##########################

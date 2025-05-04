@@ -2,10 +2,8 @@ import json
 import os
 from datetime import datetime, timedelta
 
-import redis
-from dotenv import load_dotenv
-
 import requests
+from dotenv import load_dotenv
 from flask import Flask, request, jsonify
 from werkzeug.serving import run_simple
 

@@ -5,10 +5,11 @@ Translate Command (AI-based, direct)
 This command listens for translation requests and uses the OpenAI API to translate text between English and German, then sends the result to chat/admin as appropriate.
 """
 import json
-import os
+
 from openai import OpenAI
+
 from module.message_utils import send_admin_message_to_redis, send_message_to_redis, register_exit_handler
-from module.shared_redis import redis_client, redis_client_env, pubsub
+from module.shared_redis import redis_client_env, pubsub
 
 ##########################
 # Initialize

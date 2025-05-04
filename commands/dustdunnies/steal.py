@@ -1,9 +1,7 @@
 import json
-import signal
-import sys
 
-import redis
 import numpy as np
+
 from module.message_utils import send_admin_message_to_redis, send_message_to_redis, register_exit_handler
 from module.shared_redis import redis_client, pubsub
 
@@ -94,11 +92,11 @@ for message in pubsub.listen():
         user_that_gets_robbed = msg_content.split()[1] if len(msg_content.split()) > 1 else None
         steal_amount = generate_rnd_amount_to_steal()
         if not user_that_gets_robbed:
-            send_message_to_redis(f"{message_obj["auther"]["mention"]} you need to use the @username to steal dustbunnies")
+            send_message_to_redis(f"{message_obj["author"]["mention"]} you need to use the @username to steal dustbunnies")
             continue
 
         if not user_that_gets_robbed.startswith("@"):
-            send_message_to_redis(f"{message_obj["auther"]["mention"]} you need to use the @username to steal dustbunnies")
+            send_message_to_redis(f"{message_obj["author"]["mention"]} you need to use the @username to steal dustbunnies")
             continue
         # check if user start with @ because we need the username
         steal_amount = steal_dustbunnies(user_that_gets_robbed,message_obj["author"],steal_amount)

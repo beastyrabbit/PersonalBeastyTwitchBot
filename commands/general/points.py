@@ -1,17 +1,13 @@
 import json
 import signal
 import sys
-import time
-from datetime import datetime
-import redis
+
 from module.message_utils import send_admin_message_to_redis
+from module.shared_redis import redis_client, pubsub
 
 ##########################
 # Initialize
 ##########################
-redis_client = redis.Redis(host='192.168.50.115', port=6379, db=0)
-
-pubsub = redis_client.pubsub()
 pubsub.subscribe('twitch.command.points')
 pubsub.subscribe('twitch.command.stats')
 pubsub.subscribe('twitch.command.dustbunnies')
@@ -66,7 +62,7 @@ for message in pubsub.listen():
         message_obj = json.loads(message['data'].decode('utf-8'))
         print(f"Chat Command: {message_obj.get('command')} and Message: {message_obj.get('content')}")
         username_to_check = message_obj["author"]["mention"]
-        if message_obj["Auther"]["moderator"]:
+        if message_obj["author"]["moderator"]:
             username_to_check_in_content = message_obj["content"].split()[1] if len(message_obj["content"].split()) > 1 else None
             if username_to_check_in_content:
                 username_to_check = username_to_check_in_content

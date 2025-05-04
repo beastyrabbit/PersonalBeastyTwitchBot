@@ -1,11 +1,11 @@
 import json
 import random
-import signal
-import sys
 from datetime import datetime
+
 from openai import OpenAI
+
 from module.message_utils import send_admin_message_to_redis, send_message_to_redis, register_exit_handler
-from module.shared import redis_client, pubsub, redis_client_env
+from module.shared_redis import redis_client, pubsub, redis_client_env
 
 ##########################
 # Initialize

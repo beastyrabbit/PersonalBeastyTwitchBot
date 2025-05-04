@@ -1,9 +1,7 @@
-from datetime import datetime
 import json
+from datetime import datetime
 
-import pyvban
 import redis
-import obsws_python as obs
 import requests
 
 ##########################

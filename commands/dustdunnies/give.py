@@ -1,12 +1,8 @@
 import json
-import signal
-import sys
-from datetime import timedelta, datetime
-import random
 
-import redis
+from module.shared_redis import redis_client, pubsub
+
 from module.message_utils import send_admin_message_to_redis, send_message_to_redis, register_exit_handler
-from module.shared import redis_client, pubsub
 
 ##########################
 # Initialize

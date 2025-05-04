@@ -1,9 +1,10 @@
-import json
 import time
-from flask import Flask, request
-from module.shared import redis_client, redis_client_env, get_obs_client
-from module.message_utils import send_admin_message_to_redis
 
+from flask import Flask, request
+
+from module.message_utils import send_admin_message_to_redis
+from module.shared_obs import get_obs_client
+from module.shared_redis import redis_client
 
 ##########################
 # Initialize

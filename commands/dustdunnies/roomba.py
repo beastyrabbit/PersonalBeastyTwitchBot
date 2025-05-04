@@ -1,12 +1,9 @@
 import json
-import signal
-import sys
-from datetime import timedelta, datetime
 import random
+from datetime import timedelta, datetime
 
-import redis
 from module.message_utils import send_admin_message_to_redis, send_message_to_redis, register_exit_handler
-from module.shared import redis_client, pubsub
+from module.shared_redis import redis_client, pubsub
 
 ##########################
 # Initialize
@@ -31,7 +28,6 @@ def do_the_cleaning_command(user_obj,username) -> int:
     global timeoutList
     global timeout_in_seconds
     global max_value_to_roomba
-    global redis_client
     # Check if is allowed to clean
     #if user_obj["moderator"] or user_obj["broadcaster"]:
     #    return random.randint(1, max_value_to_roomba)

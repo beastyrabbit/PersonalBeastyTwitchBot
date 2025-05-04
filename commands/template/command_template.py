@@ -12,12 +12,10 @@ Usage:
 - Add your command function implementation
 """
 import json
-import signal
-import sys
-import time
-from datetime import datetime
-from module.message_utils import send_admin_message_to_redis, send_message_to_redis, register_exit_handler
-from module.shared import redis_client, redis_client_env, pubsub, get_obs_client, send_text_to_voice
+
+from module.message_utils import send_admin_message_to_redis, register_exit_handler
+from module.shared_obs import get_obs_client
+from module.shared_redis import pubsub
 
 ##########################
 # Initialize

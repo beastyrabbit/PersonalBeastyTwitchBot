@@ -5,10 +5,12 @@ TTS Command (OpenAI-based, direct to VBAN   )
 This command listens for TTS requests and uses OpenAI's TTS API to generate speech from text, then sends the audio to the appropriate output (e.g., VBAN/OBS or other configured system).
 """
 import json
-import os
+
 from openai import OpenAI
+
 from module.message_utils import send_admin_message_to_redis, send_message_to_redis, register_exit_handler
-from module.shared import redis_client, redis_client_env, pubsub, send_text_to_voice
+from module.shared_obs import send_text_to_voice
+from module.shared_redis import redis_client_env, pubsub
 
 ##########################
 # Initialize

@@ -1,13 +1,11 @@
 import json
 import signal
 import sys
-import threading
-import time
-from datetime import datetime
+
 import redis
-import obsws_python as obs
-import pyvban
+
 from module.message_utils import send_admin_message_to_redis
+
 ##########################
 # Initialize
 ##########################

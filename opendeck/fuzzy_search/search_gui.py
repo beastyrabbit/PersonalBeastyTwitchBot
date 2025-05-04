@@ -1,12 +1,9 @@
 import json
+import logging
 import os
-import subprocess
+import threading
 
 import gi
-import threading
-import time
-import logging
-
 import pyperclip
 
 gi.require_version('Gtk', '4.0')
@@ -15,7 +12,6 @@ from gi.repository import Gtk, Gdk, GLib, Gio
 import requests
 from io import BytesIO
 from PIL import Image
-import re
 from thefuzz import process
 
 # Logger konfigurieren

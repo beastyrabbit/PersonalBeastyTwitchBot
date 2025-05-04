@@ -1,11 +1,11 @@
 import json
 import signal
 import sys
-import time
 from datetime import datetime, timedelta
 
 import pytz
 import redis
+
 from module.message_utils import send_admin_message_to_redis
 
 ##########################
