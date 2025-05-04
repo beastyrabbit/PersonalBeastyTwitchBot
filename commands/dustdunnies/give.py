@@ -49,62 +49,79 @@ def send_message_to_redis(send_message):
 # Helper Functions
 ##########################
 
-def give_dustbunnies_as_mod(user_that_gives,receiving_user,amount_gives):
-    global redis_client
-    # give the User the dustbunnies and remove the @
-    user_that_receiving_lower = receiving_user.lower().replace("@","")
-    if redis_client.exists(f"dustbunnies:{user_that_receiving_lower}"):
-        user_json = redis_client.get(f"dustbunnies:{user_that_receiving_lower}")
-        user = json.loads(user_json)
-        user["collected_dustbunnies"] += amount_gives
-        redis_client.set(f"dustbunnies:{user_that_receiving_lower}", json.dumps(user))
+def give_dustbunnies_as_mod(user_that_gives, receiving_user, amount_gives):
+    user_that_receiving_lower = receiving_user.lower().replace("@", "")
+    user_key = f"user:{user_that_receiving_lower}"
+    if redis_client.exists(user_key):
+        user_json = redis_client.get(user_key)
+        user_data = json.loads(user_json)
     else:
-        user = {
+        # create new user if not exists
+        user_data = {
             "name": user_that_receiving_lower,
-            "display_name": receiving_user.replace("@",""),
-            "collected_dustbunnies": amount_gives,
-            "message_count": 0
+            "display_name": receiving_user.replace("@", ""),
+            "chat": {"count": 0},
+            "command": {"count": 0},
+            "admin": {"count": 0},
+            "dustbunnies": {},
+            "banking": {}
         }
-        redis_client.set(f"dustbunnies:{user_that_receiving_lower}", json.dumps(user))
+    if "dustbunnies" not in user_data:
+        user_data["dustbunnies"] = {}
+    # only update dustbunnies fields
+    user_data["dustbunnies"]["collected_dustbunnies"] = user_data["dustbunnies"].get("collected_dustbunnies", 0) + amount_gives
+    redis_client.set(user_key, json.dumps(user_data))
 
 
-def give_dustbunnies(user_that_gives,receiving_user,amount_gives):
-    global redis_client
-    # check if user that gives has enough dustbunnies
-    if redis_client.exists(f"dustbunnies:{user_that_gives["name"]}"):
-        user_json = redis_client.get(f"dustbunnies:{user_that_gives["name"]}")
-        user = json.loads(user_json)
-        if user["collected_dustbunnies"] <= amount_gives:
-            send_message_to_redis(f"{user_that_gives["mention"]} does not have enough dustbunnies nice try")
+def give_dustbunnies(user_that_gives, receiving_user, amount_gives):
+    giver_lower = user_that_gives["name"].lower()
+    giver_key = f"user:{giver_lower}"
+    if redis_client.exists(giver_key):
+        giver_json = redis_client.get(giver_key)
+        giver_data = json.loads(giver_json)
+        if "dustbunnies" not in giver_data:
+            giver_data["dustbunnies"] = {}
+        # check if enough dustbunnies
+        if giver_data["dustbunnies"].get("collected_dustbunnies", 0) < amount_gives:
+            send_message_to_redis(f"{user_that_gives['mention']} does not have enough dustbunnies nice try")
             return
-        user["collected_dustbunnies"] -= amount_gives
-        redis_client.set(f"dustbunnies:{user_that_gives["name"]}", json.dumps(user))
+        giver_data["dustbunnies"]["collected_dustbunnies"] -= amount_gives
+        redis_client.set(giver_key, json.dumps(giver_data))
     else:
-        send_message_to_redis(f"{user_that_gives["mention"]} does not exist and cant give dustbunnies")
-
-    # give the User  the dustbunnies and remove the @
-    user_that_receiving_lower = receiving_user.lower().replace("@","")
-    if redis_client.exists(f"dustbunnies:{user_that_receiving_lower}"):
-        user_json = redis_client.get(f"dustbunnies:{user_that_receiving_lower}")
-        user = json.loads(user_json)
-        user["collected_dustbunnies"] += amount_gives
-        redis_client.set(f"dustbunnies:{user_that_receiving_lower}", json.dumps(user))
+        send_message_to_redis(f"{user_that_gives['mention']} does not exist and cant give dustbunnies")
+        return
+    user_that_receiving_lower = receiving_user.lower().replace("@", "")
+    receiver_key = f"user:{user_that_receiving_lower}"
+    if redis_client.exists(receiver_key):
+        receiver_json = redis_client.get(receiver_key)
+        receiver_data = json.loads(receiver_json)
     else:
-        user = {
+        # create new user if not exists
+        receiver_data = {
             "name": user_that_receiving_lower,
-            "display_name": receiving_user.replace("@",""),
-            "collected_dustbunnies": amount_gives,
-            "message_count": 0
+            "display_name": receiving_user.replace("@", ""),
+            "chat": {"count": 0},
+            "command": {"count": 0},
+            "admin": {"count": 0},
+            "dustbunnies": {},
+            "banking": {}
         }
-        redis_client.set(f"dustbunnies:{user_that_receiving_lower}", json.dumps(user))
+    if "dustbunnies" not in receiver_data:
+        receiver_data["dustbunnies"] = {}
+    # only update dustbunnies fields
+    receiver_data["dustbunnies"]["collected_dustbunnies"] = receiver_data["dustbunnies"].get("collected_dustbunnies", 0) + amount_gives
+    redis_client.set(receiver_key, json.dumps(receiver_data))
+
 
 def give_all_dustbunnies(amount):
-    global redis_client
-    all_users = redis_client.keys("dustbunnies:*")
+    all_users = redis_client.keys("user:*")
     for user in all_users:
         user_json = redis_client.get(user)
         user_obj = json.loads(user_json)
-        user_obj["collected_dustbunnies"] += amount
+        if "dustbunnies" not in user_obj:
+            user_obj["dustbunnies"] = {}
+        # only update dustbunnies fields
+        user_obj["dustbunnies"]["collected_dustbunnies"] = user_obj["dustbunnies"].get("collected_dustbunnies", 0) + amount
         redis_client.set(user, json.dumps(user_obj))
     send_message_to_redis(f"All Users got {amount} dustbunnies")
 
