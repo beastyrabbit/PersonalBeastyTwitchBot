@@ -1,5 +1,5 @@
 import json
-from module.shared import redis_client, redis_client_env, obs_client
+from module.shared import redis_client, redis_client_env, get_obs_client
 
 ##########################
 # Initialize
@@ -46,12 +46,15 @@ def toggle_filter(filter_name, state=None):
     Returns:
         bool: True if the filter was found and toggled, False otherwise
     """
-    global obs_client
-
-    # Get the current scene name
-    current_scene = obs_client.get_current_program_scene().current_program_scene_name
+    obs_client = get_obs_client()
+    if obs_client is None:
+        print("OBS client not connected yet. Filter toggle will be skipped.")
+        return False
 
     try:
+        # Get the current scene name
+        current_scene = obs_client.get_current_program_scene().current_program_scene_name
+
         # Get the list of filters on the current scene
         filters = obs_client.get_source_filter_list(current_scene).filters
 

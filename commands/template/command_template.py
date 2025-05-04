@@ -17,7 +17,7 @@ import sys
 import time
 from datetime import datetime
 from module.message_utils import send_admin_message_to_redis, send_message_to_redis, register_exit_handler
-from module.shared import redis_client, redis_client_env, pubsub, obs_client, send_text_to_voice
+from module.shared import redis_client, redis_client_env, pubsub, get_obs_client, send_text_to_voice
 
 ##########################
 # Initialize
@@ -42,7 +42,16 @@ register_exit_handler()
 
 
 def handle_command(message_obj):
+    # Example of using OBS client with the new pattern
+    obs_client = get_obs_client()
+    if obs_client is not None:
+        try:
+            # Use OBS client here
+            pass
+        except Exception as e:
+            print(f"Error using OBS client: {e}")
     return
+    
 ##########################
 # Main
 ##########################

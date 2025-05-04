@@ -4,7 +4,7 @@ import sys
 import threading
 import time
 from datetime import datetime
-from module.shared import redis_client, redis_client_env, pubsub, obs_client
+from module.shared import redis_client, redis_client_env, pubsub, get_obs_client
 from module.message_utils import send_admin_message_to_redis
 
 ##########################
@@ -16,7 +16,7 @@ pubsub.subscribe('twitch.command.suika')
 # Exit Function
 ##########################
 def handle_exit(signum, frame):
-    print("Unsubscribing from all channels bofore exiting")
+    print("Unsubscribing from all channels before exiting")
     pubsub.unsubscribe()
     # Place any cleanup code here
     sys.exit(0)  # Exit gracefully
@@ -33,17 +33,34 @@ def send_message_to_redis(send_message):
     redis_client.publish('twitch.chat.send', send_message)
 
 def enable_scene():
-    current_scene = obs_client.get_current_program_scene().current_program_scene_name
-    scene_item_id = obs_client.get_scene_item_id(scene_name=current_scene, source_name="Suika Game Lite").scene_item_id
-    obs_client.set_scene_item_enabled(current_scene, scene_item_id, True)
-    return current_scene
+    obs_client = get_obs_client()
+    if obs_client is None:
+        print("OBS client not connected yet. Scene change will be skipped.")
+        return "Scene"  # Return a default scene name
+    
+    try:
+        current_scene = obs_client.get_current_program_scene().current_program_scene_name
+        scene_item_id = obs_client.get_scene_item_id(scene_name=current_scene, source_name="Suika Game Lite").scene_item_id
+        obs_client.set_scene_item_enabled(current_scene, scene_item_id, True)
+        return current_scene
+    except Exception as e:
+        print(f"Error enabling scene: {e}")
+        return "Scene"  # Return a default scene name
 
 def disable_scene(scene_name, scene_item_name):
-    current_scene = obs_client.get_current_program_scene().current_program_scene_name
-    scene_item_id = obs_client.get_scene_item_id(scene_name=current_scene, source_name="Suika Game Lite").scene_item_id
-    obs_client.set_scene_item_enabled(current_scene, scene_item_id, False)
-    scene_item_id = obs_client.get_scene_item_id(scene_name=scene_item_name, source_name="Suika Game Lite").scene_item_id
-    obs_client.set_scene_item_enabled(scene_item_name, scene_item_id, False)
+    obs_client = get_obs_client()
+    if obs_client is None:
+        print("OBS client not connected yet. Scene change will be skipped.")
+        return
+    
+    try:
+        current_scene = obs_client.get_current_program_scene().current_program_scene_name
+        scene_item_id = obs_client.get_scene_item_id(scene_name=current_scene, source_name="Suika Game Lite").scene_item_id
+        obs_client.set_scene_item_enabled(current_scene, scene_item_id, False)
+        scene_item_id = obs_client.get_scene_item_id(scene_name=scene_item_name, source_name="Suika Game Lite").scene_item_id
+        obs_client.set_scene_item_enabled(scene_item_name, scene_item_id, False)
+    except Exception as e:
+        print(f"Error disabling scene: {e}")
 
 ##########################
 # Main
