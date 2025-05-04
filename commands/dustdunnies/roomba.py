@@ -5,16 +5,15 @@ from datetime import timedelta, datetime
 import random
 
 import redis
+from module.message_utils import send_admin_message_to_redis, send_message_to_redis, register_exit_handler
+from module.shared import redis_client, pubsub
 
 ##########################
 # Initialize
 ##########################
 timeoutList = {}
 timeout_in_seconds = 30
-redis_client = redis.Redis(host='192.168.50.115', port=6379, db=0)
-redis_client.set("roomba_max_hit_value", 1000)
 max_value_to_roomba = int(redis_client.get("roomba_max_hit_value").decode('utf-8'))
-pubsub = redis_client.pubsub()
 pubsub.subscribe('twitch.command.roomba')
 pubsub.subscribe('twitch.command.clean')
 pubsub.subscribe('twitch.command.vacuum')
@@ -22,31 +21,8 @@ pubsub.subscribe('twitch.command.vacuum')
 ##########################
 # Exit Function
 ##########################
-def handle_exit(signum, frame):
-    print("Unsubscribing from all channels bofore exiting")
-    pubsub.unsubscribe()
-    # Place any cleanup code here
-    sys.exit(0)  # Exit gracefully
-
 # Register SIGINT handler
-signal.signal(signal.SIGINT, handle_exit)
-
-##########################
-# Default Message Methods
-##########################
-def send_admin_message_to_redis(message):
-    # Create unified message object
-    admin_message_obj = {
-        "type": "admin",
-        "source": "system",
-        "content": message,
-    }
-    redis_client.publish('admin.brb.send', json.dumps(admin_message_obj))
-
-
-def send_message_to_redis(send_message):
-    redis_client.publish('twitch.chat.send', send_message)
-
+register_exit_handler()
 
 ##########################
 # Helper Functions

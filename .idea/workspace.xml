@@ -4,11 +4,8 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="a8717cb1-5c0e-44b4-b875-d2c2bf8b720d" name="Changes" comment="fixed investing">
+    <list default="true" id="a8717cb1-5c0e-44b4-b875-d2c2bf8b720d" name="Changes" comment="fixed online message">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/commands/banking/collect.py" beforeDir="false" afterPath="$PROJECT_DIR$/commands/banking/collect.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/commands/banking/invest.py" beforeDir="false" afterPath="$PROJECT_DIR$/commands/banking/invest.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/commands/dustdunnies/roomba.py" beforeDir="false" afterPath="$PROJECT_DIR$/commands/dustdunnies/roomba.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -315,7 +312,7 @@
       <workItem from="1745538084486" duration="16680000" />
       <workItem from="1745576422671" duration="13218000" />
       <workItem from="1746297573870" duration="5022000" />
-      <workItem from="1746320842605" duration="786000" />
+      <workItem from="1746320842605" duration="1465000" />
     </task>
     <task id="LOCAL-00001" summary="inital commit">
       <option name="closed" value="true" />
@@ -477,7 +474,15 @@
       <option name="project" value="LOCAL" />
       <updated>1746321500830</updated>
     </task>
-    <option name="localTasksCounter" value="21" />
+    <task id="LOCAL-00021" summary="fixed online message">
+      <option name="closed" value="true" />
+      <created>1746321644989</created>
+      <option name="number" value="00021" />
+      <option name="presentableId" value="LOCAL-00021" />
+      <option name="project" value="LOCAL" />
+      <updated>1746321644989</updated>
+    </task>
+    <option name="localTasksCounter" value="22" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -523,7 +528,8 @@
     <MESSAGE value="added message for mod give" />
     <MESSAGE value="migration of db done" />
     <MESSAGE value="fixed investing" />
-    <option name="LAST_COMMIT_MESSAGE" value="fixed investing" />
+    <MESSAGE value="fixed online message" />
+    <option name="LAST_COMMIT_MESSAGE" value="fixed online message" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>

@@ -4,21 +4,12 @@ import sys
 import threading
 import time
 from datetime import datetime
-import redis
-import obsws_python as obs
+from module.shared import redis_client, redis_client_env, pubsub, obs_client
 
 ##########################
 # Initialize
 ##########################
-redis_client = redis.Redis(host='192.168.50.115', port=6379, db=0)
-redis_client_env = redis.Redis(host='192.168.50.115', port=6379, db=1)
-pubsub = redis_client.pubsub()
 pubsub.subscribe('twitch.command.suika')
-#OBS Connection
-obs_host = redis_client_env.get("obs_host_ip").decode('utf-8')
-obs_password = redis_client_env.get("obs_password").decode('utf-8')
-# Connect to OBS
-obs_client = obs.ReqClient(host=obs_host, port=4455, password=obs_password, timeout=3)
 
 ##########################
 # Exit Function
@@ -41,14 +32,12 @@ def send_message_to_redis(send_message):
     redis_client.publish('twitch.chat.send', send_message)
 
 def enable_scene():
-    global obs_client
     current_scene = obs_client.get_current_program_scene().current_program_scene_name
     scene_item_id = obs_client.get_scene_item_id(scene_name=current_scene, source_name="Suika Game Lite").scene_item_id
     obs_client.set_scene_item_enabled(current_scene, scene_item_id, True)
     return current_scene
 
 def disable_scene(scene_name, scene_item_name):
-    global obs_client
     current_scene = obs_client.get_current_program_scene().current_program_scene_name
     scene_item_id = obs_client.get_scene_item_id(scene_name=current_scene, source_name="Suika Game Lite").scene_item_id
     obs_client.set_scene_item_enabled(current_scene, scene_item_id, False)

@@ -4,46 +4,26 @@ import sys
 from datetime import timedelta, datetime
 import random
 
-import redis
+from module.message_utils import send_admin_message_to_redis, send_message_to_redis, register_exit_handler
+from module.shared import redis_client, pubsub
 
 ##########################
 # Initialize
 ##########################
-redis_client = redis.Redis(host='192.168.50.115', port=6379, db=0)
 redis_client.set("daily_interest_rate", 0.02)
 daily_interest_rate = redis_client.get("daily_interest_rate")
-pubsub = redis_client.pubsub()
 pubsub.subscribe('twitch.command.collect')
 pubsub.subscribe('twitch.command.interest')
 
 ##########################
 # Exit Function
 ##########################
-def handle_exit(signum, frame):
-    print("Unsubscribing from all channels bofore exiting")
-    pubsub.unsubscribe()
-    # Place any cleanup code here
-    sys.exit(0)  # Exit gracefully
-
 # Register SIGINT handler
-signal.signal(signal.SIGINT, handle_exit)
+register_exit_handler()
 
 ##########################
 # Helper Functions
 ##########################
-def send_admin_message_to_redis(message):
-    # Create unified message object
-    admin_message_obj = {
-        "type": "admin",
-        "source": "system",
-        "content": message,
-    }
-    redis_client.publish('admin.brb.send', json.dumps(admin_message_obj))
-
-def send_message_to_redis(send_message):
-    redis_client.publish('twitch.chat.send', send_message)
-
-
 def calculate_interest(user):
     global daily_interest_rate
     # check if user has invested before

@@ -1,17 +1,9 @@
 import json
-import redis
-import obsws_python as obs
+from module.shared import redis_client, redis_client_env, obs_client
 
 ##########################
 # Initialize
 ##########################
-redis_client = redis.Redis(host='192.168.50.115', port=6379, db=0)
-redis_client_env = redis.Redis(host='192.168.50.115', port=6379, db=1)
-#OBS Connection
-obs_host = redis_client_env.get("obs_host_ip").decode('utf-8')
-obs_password = redis_client_env.get("obs_password").decode('utf-8')
-# Connect to OBS
-obs_client = obs.ReqClient(host=obs_host, port=4455, password=obs_password, timeout=3)
 
 ##########################
 # Exit Function

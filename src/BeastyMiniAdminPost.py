@@ -9,6 +9,7 @@ from datetime import datetime
 
 import redis
 from twitchio.ext import commands, routines
+from module.shared import redis_client_env
 
 # Configuration constants
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__)))
@@ -16,9 +17,6 @@ CHANNEL_NAME = 'Beastyrabbit'
 REDIS_HOST = '192.168.50.115'
 REDIS_PORT = 6379
 global_pubsub = {}
-
-# Redis clients
-redis_client_env = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=1)
 
 ##########################
 # Exit Function

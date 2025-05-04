@@ -9,11 +9,12 @@ import requests
 from flask import Flask, request, jsonify
 from werkzeug.serving import run_simple
 
+from module.shared import redis_client_env
+
 # Construct the absolute path to the .env file
 env_path = os.path.join(os.path.dirname(__file__), '..', 'DONOTOPEN', '.env')
 # Load the environment variables from the .env file
 load_dotenv(env_path)
-redis_client_env = redis.Redis(host='192.168.50.115', port=6379, db=1)
 
 TOKEN_FILE = 'twitch_token.json'
 REDIRECT_URI = 'https://twitch_recall.beasty.cloud/callback'
