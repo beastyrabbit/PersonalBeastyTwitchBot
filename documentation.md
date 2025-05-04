@@ -73,17 +73,11 @@ Command Syntax:
 If no group is added "default" will be autoadded
 ``` !todo add <group> <task> ```
 ``` !todo add  <task> ```
-
 ``` !todo remove <task id> ```
-
 ``` !todo remove <group> ```
-
 ``` !todo remove ``` (remove first element)
-
 ``` !todo complete <task id> ```
-
 ``` !todo complete <group> ```
-
 ``` !todo clear  ``` (clear all)
 
 ### !hug
@@ -138,6 +132,8 @@ Uses OpenAI's TTS API to generate speech from the given text and sends it to the
 ### !translate
 Command Syntax: 
 ``` !translate <text> ```
+Alternative command: 
+``` !tr <text> <language> ```
 Description: 
 Translates the given text between English and German using OpenAI. If the translation is not 1:1, a short explanation is added.
 

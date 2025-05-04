@@ -4,7 +4,8 @@ import sys
 import threading
 import time
 from datetime import datetime
-from module.shared import redis_client, redis_client_env, pubsub, get_obs_client
+from module.shared_redis import redis_client, redis_client_env, pubsub
+from module.shared_obs import get_obs_client
 from module.message_utils import send_admin_message_to_redis
 
 ##########################

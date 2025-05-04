@@ -9,7 +9,7 @@ import requests
 from flask import Flask, request, jsonify
 from werkzeug.serving import run_simple
 
-from module.shared import redis_client_env
+from module.shared_redis import redis_client_env
 
 # Construct the absolute path to the .env file
 env_path = os.path.join(os.path.dirname(__file__), '..', 'DONOTOPEN', '.env')

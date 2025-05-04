@@ -1,7 +1,7 @@
 import json
 import signal
 import sys
-from module.shared import redis_client, pubsub
+from module.shared_redis import redis_client, pubsub
 
 ##########################
 # Exit Function
