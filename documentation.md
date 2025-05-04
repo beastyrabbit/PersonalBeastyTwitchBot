@@ -86,6 +86,60 @@ If no group is added "default" will be autoadded
 
 ``` !todo clear  ``` (clear all)
 
+### !hug
+Alternative command: 
+``` !cuddle !snuggle ```
+Command Syntax: 
+``` !hug <@user> ```
+Description: 
+Sends a random, fun hug message to the mentioned user. If no user is mentioned, hugs the world.
+
+### !slots
+Alternative command: 
+``` !slot ```
+Command Syntax: 
+``` !slots <amount> ```  
+``` !slots all ```
+Description: 
+Play the slot machine with the specified amount of dustbunnies or all your dustbunnies. Win or lose based on matching symbols.
+
+### !blackjack
+Alternative command: 
+``` !bj ```
+Command Syntax: 
+``` !blackjack join ```  
+``` !blackjack hit ```  
+``` !blackjack stand ```  
+``` !blackjack double ```  
+``` !blackjack split ```
+Description: 
+Play blackjack with your dustbunnies. Join a game, hit, stand, double down, or split your hand.
+
+### !fight
+Alternative command: 
+``` !battle !duel !flight ```
+Command Syntax: 
+``` !fight <@user> ```
+Description: 
+Challenge another user to a fight. The other user must accept with !accept.
+
+### !accept
+Command Syntax: 
+``` !accept ```
+Description: 
+Accept a fight challenge. The fight is then simulated with classes, weapons, and abilities.
+
+### !tts
+Command Syntax: 
+``` !tts <text> ```
+Description: 
+Uses OpenAI's TTS API to generate speech from the given text and sends it to the configured output.
+
+### !translate
+Command Syntax: 
+``` !translate <text> ```
+Description: 
+Translates the given text between English and German using OpenAI. If the translation is not 1:1, a short explanation is added.
 
 # Unified Message Object Documentation
 
