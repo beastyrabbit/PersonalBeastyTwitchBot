@@ -17,7 +17,7 @@ pubsub.subscribe('twitch.command.system')
 pubsub.subscribe('twitch.command.sys')
 services_managed = ["brb","unbrb","discord","shoutout","todolist","collect","invest","give",
                 "roomba","steal","lurk","points","suika","timer","timezone","unlurk",
-                "blackjack","gamble","slots"]
+                "blackjack","gamble","slots","accept","fight","translate","hug",]
 services_managed += ["move_fishing","admin_logger","chat_logger","command_logger"]
 manager_service_name = "twitch-manager.service"
 running_processes = {}
