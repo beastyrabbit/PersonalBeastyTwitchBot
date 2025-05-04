@@ -5,6 +5,7 @@ import threading
 import time
 from datetime import datetime
 import redis
+from module.message_utils import send_admin_message_to_redis
 
 ##########################
 # Initialize
@@ -38,6 +39,8 @@ def send_message_to_redis(send_message):
 ##########################
 # Main
 ##########################
+send_admin_message_to_redis("Timer command is ready to be used")
+
 for message in pubsub.listen():
     if message["type"] == "message":
         message_obj = json.loads(message['data'].decode('utf-8'))

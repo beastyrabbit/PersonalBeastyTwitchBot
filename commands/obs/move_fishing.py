@@ -2,6 +2,7 @@ import json
 import time
 from flask import Flask, request
 from module.shared import redis_client, redis_client_env, obs_client
+from module.message_utils import send_admin_message_to_redis
 
 
 ##########################
@@ -82,6 +83,7 @@ def webhook2():
 ##########################
 # Main
 ##########################
+send_admin_message_to_redis("Move Fishing command is ready to be used")
 app.run(port=5005, host='0.0.0.0')
 
 

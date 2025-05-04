@@ -5,6 +5,7 @@ import threading
 import time
 from datetime import datetime
 from module.shared import redis_client, redis_client_env, pubsub, obs_client
+from module.message_utils import send_admin_message_to_redis
 
 ##########################
 # Initialize
@@ -47,6 +48,7 @@ def disable_scene(scene_name, scene_item_name):
 ##########################
 # Main
 ##########################
+send_admin_message_to_redis("Suika command is ready to be used")
 for message in pubsub.listen():
     if message["type"] == "message":
         message_obj = json.loads(message['data'].decode('utf-8'))
