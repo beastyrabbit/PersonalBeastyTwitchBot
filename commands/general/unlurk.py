@@ -35,20 +35,24 @@ def send_message_to_redis(send_message):
     redis_client.publish('twitch.chat.send', send_message)
 
 def write_unlurk_to_redis(auther_obj):
-    global redis_client
-    if redis_client.exists(f"global:{auther_obj['name']}"):
-        user_json = redis_client.get(f"global:{auther_obj['name']}")
+    username_lower = auther_obj['name'].lower()
+    user_key = f"user:{username_lower}"
+    if redis_client.exists(user_key):
+        user_json = redis_client.get(user_key)
         user_obj = json.loads(user_json)
-        if "unlurk" in user_obj:
-            user_obj["unlurk"] += 1
-        else:
-            user_obj["unlurk"] = 1
-        redis_client.set(f"global:{auther_obj['name']}", json.dumps(user_obj))
     else:
-        redis_client.set(f"global:{auther_obj['name']}", json.dumps({"unlurk": 1}))
+        user_obj = {
+            "name": auther_obj["name"],
+            "display_name": auther_obj.get("display_name", auther_obj["name"]),
+            "log": {"chat": 0, "command": 0, "admin": 0, "lurk": 0, "unlurk": 0},
+            "dustbunnies": {},
+            "banking": {}
+        }
+    if "log" not in user_obj:
+        user_obj["log"] = {"chat": 0, "command": 0, "admin": 0, "lurk": 0, "unlurk": 0}
+    user_obj["log"]["unlurk"] = user_obj["log"].get("unlurk", 0) + 1
+    redis_client.set(user_key, json.dumps(user_obj))
     send_message_to_redis(f"Lord! {auther_obj['mention']} has returned to the realm")
-
-
 
 ##########################
 # Main

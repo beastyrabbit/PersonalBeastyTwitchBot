@@ -93,6 +93,30 @@ for message in pubsub.listen():
                                              0,
                                              current_count - MAX_STORED_COMMANDS - 1)
 
+            # Unified user JSON logging for commands
+            author = message_obj.get('author', {})
+            username = author.get('name') or author.get('display_name')
+            if username:
+                username_lower = username.lower()
+                user_key = f"user:{username_lower}"
+                user_data = redis_client.get(user_key)
+                if user_data:
+                    user_json = json.loads(user_data)
+                else:
+                    user_json = {
+                        "name": username,
+                        "display_name": author.get('display_name', username),
+                        "log": {"chat": 0, "command": 0, "admin": 0, "lurk": 0, "unlurk": 0},
+                        "dustbunnies": {},
+                        "banking": {}
+                    }
+                if "log" not in user_json:
+                    user_json["log"] = {"chat": 0, "command": 0, "admin": 0, "lurk": 0, "unlurk": 0}
+                user_json["log"]["command"] = user_json["log"].get("command", 0) + 1
+                user_json["log"]["last_command"] = command_name
+                user_json["log"]["last_timestamp"] = message_obj["timestamp"]
+                redis_client.set(user_key, json.dumps(user_json))
+
             author_name = message_obj.get('author', {}).get('display_name', 'Unknown')
             print(f"Stored command: !{command_name} from {author_name} - {message_obj.get('content')}")
 
