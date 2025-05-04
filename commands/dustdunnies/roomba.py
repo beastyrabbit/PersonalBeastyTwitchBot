@@ -100,9 +100,8 @@ def handle_user_data(user_obj, rnd_number_for_user):
 ##########################
 # Main
 ##########################
+send_admin_message_to_redis("Roomba command is running")
 for message in pubsub.listen():
-    send_admin_message_to_redis("Roomba command is running")
-
     if message["type"] == "message":
         message_obj = json.loads(message['data'].decode('utf-8'))
         print(f"Chat Command: {message_obj.get('command')} and Message: {message_obj.get('content')}")

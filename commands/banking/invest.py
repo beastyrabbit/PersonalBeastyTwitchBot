@@ -34,6 +34,14 @@ signal.signal(signal.SIGINT, handle_exit)
 ##########################
 # Helper Functions
 ##########################
+def send_admin_message_to_redis(message):
+    # Create unified message object
+    admin_message_obj = {
+        "type": "admin",
+        "source": "system",
+        "content": message,
+    }
+    redis_client.publish('admin.brb.send', json.dumps(admin_message_obj))
 
 def send_message_to_redis(send_message):
     redis_client.publish('twitch.chat.send', send_message)
@@ -66,6 +74,7 @@ def invest_money(user, invest_amount):
 ##########################
 # Main
 ##########################
+send_admin_message_to_redis("Invest command is running")
 for message in pubsub.listen():
     if message["type"] == "message":
         message_obj = json.loads(message['data'].decode('utf-8'))
