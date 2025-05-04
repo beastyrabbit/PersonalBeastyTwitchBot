@@ -73,24 +73,28 @@ def do_the_cleaning_command(user_obj,username) -> int:
     rnd_number_for_user = get_random = random.randint(1, max_value_to_roomba)
     return rnd_number_for_user
 
-def handle_user_data(user_obj,rnd_number_for_user):
-    global timeoutList
-    global timeout_in_seconds
-    global redis_client
-    if redis_client.exists(f"dustbunnies:{user_obj['name']}"):
-        user_json = redis_client.get(f"dustbunnies:{user_obj['name']}")
+def handle_user_data(user_obj, rnd_number_for_user):
+    username_lower = user_obj["name"].lower()
+    user_key = f"user:{username_lower}"
+    if redis_client.exists(user_key):
+        user_json = redis_client.get(user_key)
         user = json.loads(user_json)
-        user["collected_dustbunnies"] += rnd_number_for_user
-        user["message_count"] += 1
-        redis_client.set(f"dustbunnies:{user_obj['name']}", json.dumps(user))
     else:
         user = {
             "name": user_obj["name"],
             "display_name": user_obj["display_name"],
-            "collected_dustbunnies": rnd_number_for_user,
-            "message_count": 1
+            "chat": {"count": 0},
+            "command": {"count": 0},
+            "admin": {"count": 0},
+            "dustbunnies": {},
+            "banking": {}
         }
-        redis_client.set(f"dustbunnies:{user_obj['name']}", json.dumps(user))
+    if "dustbunnies" not in user:
+        user["dustbunnies"] = {}
+    # Only update dustbunnies-specific fields
+    user["dustbunnies"]["collected_dustbunnies"] = user["dustbunnies"].get("collected_dustbunnies", 0) + rnd_number_for_user
+    user["dustbunnies"]["message_count"] = user["dustbunnies"].get("message_count", 0) + 1
+    redis_client.set(user_key, json.dumps(user))
 
 
 ##########################
