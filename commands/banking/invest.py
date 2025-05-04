@@ -38,29 +38,30 @@ signal.signal(signal.SIGINT, handle_exit)
 def send_message_to_redis(send_message):
     redis_client.publish('twitch.chat.send', send_message)
 
-def invest_money(user,invest_amount):
-    global redis_client
-    # check if user has a banking object
-    if redis_client.exists(f"banking:{user['name']}"):
-        user_json = redis_client.get(f"banking:{user['name']}")
+def invest_money(user, invest_amount):
+    username_lower = user["name"].lower()
+    user_key = f"user:{username_lower}"
+    if redis_client.exists(user_key):
+        user_json = redis_client.get(user_key)
         user_obj = json.loads(user_json)
-        user_obj["points_invested"] += invest_amount
-        user_obj["timestamp_investment"] = datetime.now(tz=None).isoformat()
-        redis_client.set(f"banking:{user['name']}", json.dumps(user_obj))
     else:
         user_obj = {
             "name": user["name"],
             "display_name": user["display_name"],
-            "total_bunnies_collected": 0,
-            "bunnies_invested": invest_amount,
-            "timestamp_investment": datetime.now(tz=None).isoformat(),
-            "last_interest_collected": 0
+            "chat": {"count": 0},
+            "command": {"count": 0},
+            "admin": {"count": 0},
+            "dustbunnies": {},
+            "banking": {}
         }
-        redis_client.set(f"banking:{user['name']}", json.dumps(user_obj))
-
-
-
-
+    if "banking" not in user_obj:
+        user_obj["banking"] = {}
+    # Only update banking-specific fields
+    user_obj["banking"]["total_bunnies_collected"] = user_obj["banking"].get("total_bunnies_collected", 0)
+    user_obj["banking"]["bunnies_invested"] = user_obj["banking"].get("bunnies_invested", 0) + invest_amount
+    user_obj["banking"]["timestamp_investment"] = datetime.now(tz=None).isoformat()
+    user_obj["banking"]["last_interest_collected"] = user_obj["banking"].get("last_interest_collected", 0)
+    redis_client.set(user_key, json.dumps(user_obj))
 
 ##########################
 # Main
