@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Game of Life</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='gameoflife.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Conway's Game of Life</h1>
+            <div class="info">
+                <p>Game ID: <span id="game-id">{{ game_id }}</span></p>
+                <p>Seed: <span id="seed">{{ seed }}</span></p>
+                <p>Speed: <span id="speed">1x</span></p>
+                <p>Time: <span id="time">0s</span></p>
+                <p>Steps: <span id="steps">0</span></p>
+                <p>Dustbunnies: <span id="dustbunnies">0</span></p>
+                <div id="status-indicator" class="hidden">
+                    Status: <span id="status">Waiting</span>
+                </div>
+            </div>
+        </div>
+        <div class="game-container">
+            <div id="gameGrid" class="game-grid"></div>
+            <div id="game-over" class="hidden">Game Over</div>
+        </div>
+        <div class="controls">
+            <button id="start-button">Start Game</button>
+            {% if test_mode %}
+            <button id="new-seed-button">New Random Seed</button>
+            {% endif %}
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='gameoflife.js') }}"></script>
+</body>
+</html>

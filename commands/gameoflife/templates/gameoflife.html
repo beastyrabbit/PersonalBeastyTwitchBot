@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Game of Life</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='gameoflife.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Conway's Game of Life</h1>
+            <div class="info">
+                <p>Seed: <span id="seed">{{ seed }}</span></p>
+                <p>Speed: <span id="speed">1x</span></p>
+                <p>Time: <span id="time">0s</span></p>
+                <p>Steps: <span id="steps">0</span></p>
+                <p>Dustbunnies: <span id="dustbunnies">0</span></p>
+                <p id="status-indicator" class="hidden">Status: <span id="status">Idle</span></p>
+            </div>
+        </div>
+        <div class="controls">
+            <button id="start-button" class="control-button">Start Game</button>
+            {% if test_mode %}
+            <button id="new-seed-button" class="control-button">New Random Seed</button>
+            {% endif %}
+        </div>
+        <canvas id="gameCanvas"></canvas>
+    </div>
+
+    <script>
+        // Game of Life client-side code
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const seedDisplay = document.getElementById('seed');
+        const speedDisplay = document.getElementById('speed');
+        const timeDisplay = document.getElementById('time');
+        const stepsDisplay = document.getElementById('steps');
+        const dustbunniesDisplay = document.getElementById('dustbunnies');
+        const statusIndicator = document.getElementById('status-indicator');
+        const statusDisplay = document.getElementById('status');
+        const startButton = document.getElementById('start-button');
+
+        {% if test_mode %}
+        const newSeedButton = document.getElementById('new-seed-button');
+        {% endif %}
+
+        // Set canvas size to match config
+        canvas.width = {{ config.width }};
+        canvas.height = {{ config.height }};
+
+        let config = {{ config|tojson }};
+        let grid = [];
+        let isRunning = false;
+        let isTestMode = {{ 'true' if test_mode else 'false' }};
+        let gameEnded = false;
+
+        // Initialize the game
+        function init(customSeed = null) {
+            // Clear the canvas first
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Update UI
+            statusIndicator.classList.remove('hidden');
+            statusDisplay.textContent = 'Starting...';
+            statusDisplay.className = '';
+
+            // Start the game on the server
+            fetch('/start', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    seed: customSeed || {{ seed or 'null' }}
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                seedDisplay.textContent = data.seed;
+                isRunning = true;
+                gameEnded = false;
+                statusDisplay.textContent = 'Running';
+                startButton.textContent = 'Restart Game';
+                updateLoop();
+            });
+        }
+
+        // Variables to track timing
+        let lastTimestamp = 0;
+        let serverUpdateInterval = 2000; // Default 2 seconds in ms
+        let lastGridUpdate = Date.now();
+        let pendingUpdate = false;
+
+        // Update loop to fetch the latest grid state
+        function updateLoop() {
+            if (!isRunning) return;
+
+            // Check if it's time to fetch a new update based on server's update interval
+            const now = Date.now();
+            const timeSinceLastUpdate = now - lastGridUpdate;
+
+            // Only fetch new data if we're not already waiting for a response
+            // and enough time has passed since the last update
+            if (!pendingUpdate) {
+                pendingUpdate = true;
+
+                fetch('/grid')
+                    .then(response => response.json())
+                    .then(data => {
+                        pendingUpdate = false;
+
+                        if (data.error) {
+                            console.error(data.error);
+                            setTimeout(updateLoop, 1000);
+                            return;
+                        }
+
+                        // Get the server's update interval in milliseconds
+                        serverUpdateInterval = data.update_interval * 1000;
+
+                        // Check if this is a new grid state based on timestamp
+                        const serverTimestamp = data.timestamp;
+                        const isNewState = serverTimestamp > lastTimestamp;
+                        lastTimestamp = serverTimestamp;
+
+                        if (isNewState) {
+                            // Update the grid and UI with new data
+                            grid = data.grid;
+                            config = data.config;
+                            speedDisplay.textContent = data.speed_multiplier.toFixed(1) + 'x';
+                            timeDisplay.textContent = data.elapsed_time.toFixed(1) + 's';
+                            stepsDisplay.textContent = data.steps;
+                            dustbunniesDisplay.textContent = data.dustbunnies_awarded.toFixed(0);
+
+                            // Store the cells that will be created or destroyed
+                            window.willBeCreated = data.will_be_created;
+                            window.willBeDestroyed = data.will_be_destroyed;
+
+                            // Record when we received this update
+                            lastGridUpdate = now;
+                        }
+
+                        // Draw the grid
+                        drawGrid();
+
+                        // Check if the game is in ending state
+                        if (data.ending) {
+                            statusDisplay.textContent = 'Ending: ';
+
+                            // Show reason for ending
+                            if (data.end_reason === 'dead') {
+                                statusDisplay.textContent += 'All Cells Dead';
+                            } else if (data.end_reason === 'loop') {
+                                statusDisplay.textContent += 'Pattern Loop Detected';
+                            } else if (data.end_reason === 'timeout') {
+                                statusDisplay.textContent += 'Time Limit Reached';
+                            }
+
+                            statusDisplay.className = 'ending';
+                        }
+
+                        // Check if the game has ended (server reports not running and not in ending state)
+                        if (!data.running && !data.ending) {
+                            isRunning = false;
+                            statusDisplay.textContent = 'Game Over';
+                            statusDisplay.className = 'ended';
+                            gameEnded = true;
+                            drawGrid(); // Redraw with game over overlay
+                            return;
+                        }
+
+                        // If we're in ending state, we need to keep updating the animation
+                        // but we don't need to fetch new data as frequently
+                        if (data.ending) {
+                            // Just update the animation more frequently than data fetching
+                            setTimeout(() => {
+                                drawGrid(); // Update the animation
+                                setTimeout(updateLoop, Math.min(serverUpdateInterval, 500)); // Continue the loop but fetch data less frequently
+                            }, 50);
+                            return;
+                        }
+
+                        // Calculate time to wait before next update
+                        // Use a fraction of the server's update interval to ensure we don't miss updates
+                        const nextUpdateDelay = Math.max(100, Math.min(serverUpdateInterval * 0.8, 1000));
+
+                        // Continue the loop
+                        setTimeout(updateLoop, nextUpdateDelay);
+                    })
+                    .catch(error => {
+                        pendingUpdate = false;
+                        console.error('Error fetching grid:', error);
+                        setTimeout(updateLoop, 1000);  // Retry after a longer delay
+                    });
+            } else {
+                // If we're already waiting for a response, check again soon
+                setTimeout(updateLoop, 100);
+            }
+        }
+
+        // Variables for smooth transitions
+        let lastGrid = null;
+        let transitionProgress = 1.0; // 0.0 to 1.0, where 1.0 means fully transitioned
+        let transitionSpeed = 0.1; // How quickly to transition between states
+        let lastUpdateTime = Date.now(); // Track when the last update occurred
+
+        // Function to animate transitions between grid states
+        function animateTransition() {
+            if (transitionProgress < 1.0) {
+                transitionProgress += transitionSpeed;
+                if (transitionProgress > 1.0) transitionProgress = 1.0;
+
+                // Redraw with updated transition progress
+                drawGrid();
+
+                // Continue animation if not complete
+                if (transitionProgress < 1.0) {
+                    requestAnimationFrame(animateTransition);
+                }
+            }
+        }
+
+        // Draw the grid on the canvas
+        function drawGrid() {
+            if (!grid || !grid.length) return;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const pixelSize = config.pixel_size;
+            const rows = grid.length;
+            const cols = grid[0].length;
+
+            // If this is a new grid state, start a transition
+            if (lastGrid === null) {
+                lastGrid = JSON.parse(JSON.stringify(grid)); // Deep copy
+                transitionProgress = 1.0; // No transition for first grid
+            } else if (transitionProgress >= 1.0) {
+                // If we've completed the previous transition and have a new grid state
+                if (JSON.stringify(grid) !== JSON.stringify(lastGrid)) {
+                    // Calculate time since last update
+                    const now = Date.now();
+                    const timeSinceLastUpdate = now - lastUpdateTime;
+                    lastUpdateTime = now;
+
+                    // Adjust transition speed based on server update interval
+                    // We want the transition to complete in about 70% of the time until the next update
+                    // This ensures the transition completes before the next grid state arrives
+                    const targetTransitionTime = Math.min(serverUpdateInterval * 0.7, 1000);
+
+                    // Calculate frames needed for transition (assuming 60fps)
+                    const framesForTransition = targetTransitionTime / 16.67; // 16.67ms per frame at 60fps
+
+                    // Set transition speed to complete in the target time
+                    transitionSpeed = 1.0 / Math.max(1, framesForTransition);
+
+                    // Start the transition
+                    lastGrid = JSON.parse(JSON.stringify(grid)); // Deep copy
+                    transitionProgress = 0.0; // Start new transition
+                    requestAnimationFrame(animateTransition);
+                }
+            }
+
+            // Draw cells that will be created (in green)
+            if (window.willBeCreated) {
+                for (let y = 0; y < rows; y++) {
+                    for (let x = 0; x < cols; x++) {
+                        if (window.willBeCreated[y][x] === 1) {
+                            // Fade in cells that will be created
+                            const alpha = 0.3 + (0.7 * transitionProgress);
+                            ctx.fillStyle = `rgba(0, 255, 0, ${alpha})`;  // Green with fade
+                            ctx.fillRect(x * pixelSize, y * pixelSize, pixelSize, pixelSize);
+                        }
+                    }
+                }
+            }
+
+            // Draw cells that will be destroyed (in red)
+            if (window.willBeDestroyed) {
+                for (let y = 0; y < rows; y++) {
+                    for (let x = 0; x < cols; x++) {
+                        if (window.willBeDestroyed[y][x] === 1) {
+                            // Fade in cells that will be destroyed
+                            const alpha = 0.3 + (0.7 * transitionProgress);
+                            ctx.fillStyle = `rgba(255, 0, 0, ${alpha})`;  // Red with fade
+                            ctx.fillRect(x * pixelSize, y * pixelSize, pixelSize, pixelSize);
+                        }
+                    }
+                }
+            }
+
+            // Draw live cells (in hot pink)
+            for (let y = 0; y < rows; y++) {
+                for (let x = 0; x < cols; x++) {
+                    if (grid[y][x] === 1) {
+                        // Only draw in hot pink if not being destroyed
+                        if (!(window.willBeDestroyed && window.willBeDestroyed[y][x] === 1)) {
+                            // Apply transition effect to live cells
+                            const alpha = 0.5 + (0.5 * transitionProgress);
+                            ctx.fillStyle = `rgba(255, 20, 147, ${alpha})`;  // Hot pink with fade
+                            ctx.fillRect(x * pixelSize, y * pixelSize, pixelSize, pixelSize);
+                        }
+                    }
+                }
+            }
+
+            // If game is in ending state, show a subtle indicator
+            if (statusDisplay.className === 'ending') {
+                // Draw a subtle pulsing border
+                const time = new Date().getTime() * 0.001;
+                const pulseIntensity = 0.3 + 0.2 * Math.sin(time * 3); // Pulsing between 0.3 and 0.5 opacity
+
+                ctx.strokeStyle = `rgba(255, 165, 0, ${pulseIntensity})`;
+                ctx.lineWidth = 10;
+                ctx.strokeRect(0, 0, canvas.width, canvas.height);
+
+                // Add a subtle text overlay showing the reason
+                ctx.font = 'bold 24px sans-serif';
+                ctx.fillStyle = `rgba(255, 255, 255, ${pulseIntensity})`;
+                ctx.textAlign = 'center';
+                ctx.fillText(statusDisplay.textContent, canvas.width / 2, 50);
+            }
+
+            // If game has fully ended, show a clear indicator
+            if (gameEnded) {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                ctx.font = 'bold 48px sans-serif';
+                ctx.fillStyle = 'white';
+                ctx.textAlign = 'center';
+                ctx.fillText('GAME OVER', canvas.width / 2, canvas.height / 2);
+            }
+        }
+
+        // Event listeners
+        startButton.addEventListener('click', function() {
+            init();
+        });
+
+        {% if test_mode %}
+        newSeedButton.addEventListener('click', function() {
+            // Generate a random seed
+            const randomSeed = Math.floor(Math.random() * 1000000);
+            init(randomSeed);
+        });
+        {% endif %}
+
+        // Start the game automatically only in test mode
+        window.onload = function() {
+            if (isTestMode) {
+                init();
+            } else {
+                statusIndicator.classList.remove('hidden');
+                statusDisplay.textContent = 'Ready';
+            }
+        };
+    </script>
+</body>
+</html>

@@ -15,7 +15,7 @@ redis_client_env = redis.Redis(host='192.168.50.115', port=6379, db=1)
 pubsub = redis_client.pubsub()
 pubsub.subscribe('twitch.command.system')
 pubsub.subscribe('twitch.command.sys')
-services_managed = ["brb","unbrb","discord","shoutout","todolist","collect","invest","give","roomba","steal","lurk","points","suika","timer","timezone","unlurk","blackjack","gamble","slots","accept","fight","translate","hug",]
+services_managed = ["brb","unbrb","discord","shoutout","todolist","collect","invest","give","roomba","steal","lurk","points","suika","timer","timezone","unlurk","blackjack","gamble","slots","accept","fight","translate","hug","gameoflife",]
 services_managed += ["move_fishing","admin_logger","chat_logger","command_logger"]
 manager_service_name = "twitch-manager.service"
 running_processes = {}
