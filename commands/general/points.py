@@ -2,7 +2,7 @@ import json
 import signal
 import sys
 
-from module.message_utils import send_admin_message_to_redis
+from module.message_utils import send_admin_message_to_redis, send_message_to_redis
 from module.shared_redis import redis_client, pubsub
 
 ##########################
@@ -29,8 +29,6 @@ signal.signal(signal.SIGINT, handle_exit)
 # Helper Functions
 ##########################
 
-def send_message_to_redis(send_message, command="points"):
-    redis_client.publish('twitch.chat.send', send_message)
 
 def print_statistics(username):
     username_lower = username.lower()

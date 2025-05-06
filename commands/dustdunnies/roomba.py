@@ -39,7 +39,7 @@ def do_the_cleaning_command(user_obj,username) -> int:
         if datetime.now(tz=None) - last_timeout > timedelta(seconds=timeout_in_seconds):
             timeoutList[username] = datetime.now(tz=None)
         else:
-            send_admin_message_to_redis(f"Username: {username} still has {timeout_in_seconds - int((datetime.now(tz=None) - last_timeout).total_seconds())} in Timeout")
+            send_admin_message_to_redis(f"Username: {username} still has {timeout_in_seconds - int((datetime.now(tz=None) - last_timeout).total_seconds())} in Timeout","roomba")
             return 0
     #print(f"Timeout List: {timeoutList}")
     rnd_number_for_user = get_random = random.randint(1, max_value_to_roomba)
