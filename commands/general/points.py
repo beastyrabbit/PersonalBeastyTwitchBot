@@ -34,23 +34,48 @@ def send_message_to_redis(send_message, command="points"):
 
 def print_statistics(username):
     username_lower = username.lower()
+    # remove the "@" from the username if it exists
+    if username_lower.startswith("@"):
+        username_lower = username_lower[1:]
     user_key = f"user:{username_lower}"
     if redis_client.exists(user_key):
         user_json = redis_client.get(user_key)
         user_obj = json.loads(user_json)
-        # Dustbunnies
+        
+        # User log information
+        log = user_obj.get("log", {})
+        chat_count = log.get("chat", 0)
+        command_count = log.get("command", 0)
+        last_command = log.get("last_command", "none")
+        last_message = log.get("last_message", "")
+        
+        # Dustbunnies information
         dustbunnies = user_obj.get("dustbunnies", {})
         collected = dustbunnies.get("collected_dustbunnies", 0)
         message_count = dustbunnies.get("message_count", 0)
-        send_message_to_redis(f"{username} has collected {collected} dustbunnies and has sent {message_count} messages", command="points")
-        # Banking
+        
+        # Banking information
         banking = user_obj.get("banking", {})
         invested = banking.get("bunnies_invested", 0)
         total_collected = banking.get("total_bunnies_collected", 0)
-        send_message_to_redis(f"{username} has invested {invested} dustbunnies and has collected {total_collected} dustbunnies", command="points")
+        interest_collected = banking.get("last_interest_collected", 0)
+        
+        # Send formatted messages with statistics
+        display_name = user_obj.get("display_name", username)
+        
+        # Stats summary
+        # send_message_to_redis(f"{display_name} has sent {chat_count} chat messages and used {command_count} commands. Last command: {last_command}", command="stats")
+        
+        # Dustbunnies summary
+        send_message_to_redis(f"{display_name} has collected {collected} dustbunnies total", command="dustbunnies")
+        
+        # Banking summary
+        if invested > 0:
+            send_message_to_redis(f"{display_name} has invested {invested} dustbunnies and earned {interest_collected} in interest", command="balance")
+        else:
+            send_message_to_redis(f"{display_name} has not invested any dustbunnies yet", command="balance")
     else:
-        send_message_to_redis(f"{username} has not collected any dustbunnies yet", command="points")
-        send_message_to_redis(f"{username} has not invested any dustbunnies yet", command="points")
+        send_message_to_redis(f"{username} has no records in the system yet", command="points")
 
 
 ##########################
@@ -60,9 +85,13 @@ send_admin_message_to_redis("Points command is ready to be used", "points")
 for message in pubsub.listen():
     if message["type"] == "message":
         message_obj = json.loads(message['data'].decode('utf-8'))
-        print(f"Chat Command: {message_obj.get('command')} and Message: {message_obj.get('content')}")
+        command = message_obj.get('command', '')
+        print(f"Chat Command: {command} and Message: {message_obj.get('content')}")
+        
+        # Get username to check
         username_to_check = message_obj["author"]["mention"]
-        if message_obj["author"]["moderator"]:
+        # If moderator can check stats for other users
+        if message_obj["author"]["moderator"] or message_obj["author"]["broadcaster"]:
             username_to_check_in_content = message_obj["content"].split()[1] if len(message_obj["content"].split()) > 1 else None
             if username_to_check_in_content:
                 username_to_check = username_to_check_in_content
