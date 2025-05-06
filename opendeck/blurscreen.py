@@ -2,7 +2,7 @@ import json
 
 from module.shared_obs import get_obs_client
 from module.shared_redis import redis_client
-
+from module.message_utils import send_admin_message_to_redis, send_message_to_redis
 
 ##########################
 # Initialize
@@ -13,24 +13,6 @@ from module.shared_redis import redis_client
 ##########################
 def handle_exit(signum, frame):
     return
-
-
-
-##########################
-# Default Message Methods
-##########################
-def send_admin_message_to_redis(message, command="brb"):
-    # Create unified message object
-    admin_message_obj = {
-        "type": "admin",
-        "source": "system",
-        "content": message,
-    }
-    redis_client.publish(f'admin.{command}.send', json.dumps(admin_message_obj))
-
-
-def send_message_to_redis(send_message, command="blurscreen"):
-    redis_client.publish('twitch.chat.send', send_message)
 
 ##########################
 # Helper Functions
@@ -52,6 +34,7 @@ def toggle_filter(filter_name, state=None):
     obs_client = get_obs_client()
     if obs_client is None:
         print("OBS client not connected yet. Filter toggle will be skipped.")
+        send_admin_message_to_redis("OBS client not connected yet. Filter toggle will be skipped.", command="obs")
         return False
 
     try:

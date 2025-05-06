@@ -20,7 +20,7 @@ MAX_STORED_MESSAGES = 10000  # Limit to prevent unbounded growth
 ##########################
 redis_client = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB)
 pubsub = redis_client.pubsub()
-pubsub.subscribe('twitch.chat.recieved')
+pubsub.subscribe('twitch.chat.received')
 
 ##########################
 # Exit Function
