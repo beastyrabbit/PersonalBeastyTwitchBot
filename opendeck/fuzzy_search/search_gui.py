@@ -2,6 +2,8 @@ import json
 import logging
 import os
 import threading
+import time
+import uuid
 
 import gi
 import pyperclip
@@ -9,13 +11,15 @@ import pyperclip
 gi.require_version('Gtk', '4.0')
 gi.require_version('Gdk', '4.0')
 from gi.repository import Gtk, Gdk, GLib, Gio
+from module.message_utils import send_admin_message_to_redis, send_message_to_redis
+from module.shared_redis import redis_client
 import requests
 from io import BytesIO
 from PIL import Image
 from thefuzz import process
 
-# Logger konfigurieren
-logging.basicConfig(level=logging.ERROR)
+# Logger konfigurieren - use INFO level for better debugging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 class TwitchChannelSearchApp(Gtk.Application):
@@ -28,6 +32,26 @@ class TwitchChannelSearchApp(Gtk.Application):
         self.search_index = {}  # For faster searching
         self.debounce_timer = None
         self.icon_lock = threading.Lock()  # Lock für Icons
+        
+        # Create CSS provider for Twitch-style buttons
+        self.css_provider = Gtk.CssProvider()
+        self.css_provider.load_from_data("""
+            .twitch-button {
+                color: #6441a5;
+                font-weight: bold;
+                border-radius: 6px;
+                padding: 4px 8px;
+                border: none;
+            }
+            .twitch-button:hover {
+                background-color: #a970ff;
+            }
+        """.encode('utf-8'))
+        Gtk.StyleContext.add_provider_for_display(
+            Gdk.Display.get_default(),
+            self.css_provider,
+            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+        )
 
     def on_activate(self, app):
         # Dark Mode aktivieren
@@ -49,9 +73,7 @@ class TwitchChannelSearchApp(Gtk.Application):
         self.search_entry.connect("search-changed", self.on_search_changed)
         self.search_entry.connect("activate", self.on_search_activated)
         box.append(self.search_entry)
-
-
-
+        
         # Restliche UI-Elemente
         scrolled = Gtk.ScrolledWindow()
         scrolled.set_vexpand(True)
@@ -65,8 +87,7 @@ class TwitchChannelSearchApp(Gtk.Application):
 
         self.load_channels()
         self.win.present()
-
-
+        
     def create_list_factory(self):
         factory = Gtk.SignalListItemFactory()
         factory.connect("setup", self._on_factory_setup)
@@ -91,6 +112,11 @@ class TwitchChannelSearchApp(Gtk.Application):
         label.set_hexpand(True)
         box.append(label)
 
+        # Add a copy button for each item
+        button = Gtk.Button(label="", css_classes=["twitch-button"])
+        button.set_margin_start(5)
+        box.append(button)
+    
         list_item.set_child(box)
         # Store the loading state to prevent multiple loads
         list_item.loading_icon = False
@@ -103,12 +129,16 @@ class TwitchChannelSearchApp(Gtk.Application):
         box = list_item.get_child()
         image = box.get_first_child()
         label = image.get_next_sibling()
-
+        button = label.get_next_sibling()
+    
         channel_id = list_item.get_item().get_string()
         channel = next((c for c in self.filtered_channels if c["broadcaster_id"] == channel_id), None)
-
+    
         if channel:
             label.set_text(channel["broadcaster_name"])
+            
+            # Connect button to copy handler
+            button.connect("clicked", self.on_copy_button_clicked, channel["broadcaster_name"])
 
             # Set default icon first
             image.set_from_icon_name("user-info-symbolic")
@@ -257,6 +287,183 @@ class TwitchChannelSearchApp(Gtk.Application):
         #clipboard = Gdk.Display.get_default().get_clipboard()
         #clipboard.set_text(text)
 
+    def send_announcement_to_redis(self, send_message):
+        # Convert to JSON string if message is not already a string
+        if not isinstance(send_message, str):
+            send_message = json.dumps(send_message)
+        redis_client.publish('twitch.chat.announcement', send_message)
+        logger.info(f"Announcement sent: {send_message}")
+
+    def send_shoutout_to_redis(self, send_message):
+        redis_client.publish('twitch.chat.shoutout', send_message)
+        logger.info(f"Shoutout sent: {send_message}")
+
+    def fetch_user_stream_data(self, username):
+        """Fetch user and stream data from Redis using the same logic as in shoutout.py"""
+        username = username.lower()
+
+        # Get user data from Redis
+        request_id = str(uuid.uuid4())
+        response_stream = f"response_stream:{request_id}"
+        redis_client.xadd("request_stream", {"request_id": request_id, "username": username, "type": "fetch_user"})
+        response = redis_client.xread({response_stream: "$"}, count=1, block=5000)  # 5s timeout
+
+        if not response:
+            logger.error("No user data response received for user: %s", username)
+            return None, None
+
+        user_data = response[0][1][0][1][b'user_data'].decode()
+        user_data = json.loads(user_data)
+        logger.info("Got user data response for: %s", username)
+
+        if not user_data:
+            logger.error("User not found: %s", username)
+            return None, None
+
+        user_id = user_data["data"]["user_id"]
+
+        # Get stream data from Redis
+        request_id = str(uuid.uuid4())
+        response_stream = f"response_stream:{request_id}"
+        redis_client.xadd("request_stream", {"request_id": request_id, "user_id": user_id, "type": "fetch_channels"})
+        response = redis_client.xread({response_stream: "$"}, count=1, block=5000)  # 5s timeout
+
+        if not response:
+            logger.error("No stream data response received for user: %s", username)
+            return user_id, None
+
+        streams = response[0][1][0][1][b'channel_data'].decode()
+        streams = json.loads(streams)
+
+        return user_id, streams
+
+    def send_announcement_to_redis(self, send_message):
+        redis_client.publish('twitch.chat.announcement', send_message)
+        logger.info(f"Announcement sent: {send_message}")
+    
+    def send_shoutout_to_redis(self, user_id):
+        # Send just the user_id for shoutout
+        redis_client.publish('twitch.chat.shoutout', user_id)
+        logger.info(f"Shoutout sent for user ID: {user_id}")
+        
+    def fetch_user_stream_data(self, username):
+        """Fetch user and stream data from Redis using the same logic as in shoutout.py"""
+        try:
+            username = username.lower().strip()
+            logger.info("Fetching data for user: %s", username)
+            
+            # Get user data from Redis
+            request_id = str(uuid.uuid4())
+            response_stream = f"response_stream:{request_id}"
+            
+            # Add logging to track the request
+            logger.info("Sending fetch_user request: ID=%s, username=%s", request_id, username)
+            
+            # Send request to Redis stream
+            redis_client.xadd("request_stream", {"request_id": request_id, "username": username, "type": "fetch_user"})
+            
+            # Wait for response with timeout
+            response = redis_client.xread({response_stream: "$"}, count=1, block=8000)  # 8s timeout for better reliability
+            
+            if not response or len(response) == 0 or len(response[0][1]) == 0:
+                logger.error("No user data response received for user: %s (empty response)", username)
+                # Try direct API fallback or clipboard-only mode
+                return None, None
+                
+            # Debug response format
+            logger.info("Response structure: %s", str(response[0][1][0][1].keys()))
+            
+            if b'user_data' not in response[0][1][0][1]:
+                logger.error("Invalid user data response format for user: %s", username)
+                return None, None
+                
+            user_data = response[0][1][0][1][b'user_data'].decode('utf-8')
+            user_data = json.loads(user_data)
+            
+            if not user_data or "data" not in user_data or "user_id" not in user_data["data"]:
+                logger.error("Invalid user data content for user: %s - %s", username, str(user_data))
+                return None, None
+                
+            user_id = user_data["data"]["user_id"]
+            logger.info("Got user_id=%s for username=%s", user_id, username)
+            
+            # Get stream data from Redis
+            request_id = str(uuid.uuid4())
+            response_stream = f"response_stream:{request_id}"
+            
+            logger.info("Sending fetch_channels request: ID=%s, user_id=%s", request_id, user_id)
+            redis_client.xadd("request_stream", {"request_id": request_id, "user_id": user_id, "type": "fetch_channels"})
+            response = redis_client.xread({response_stream: "$"}, count=1, block=5000)  # 5s timeout
+            
+            if not response or len(response) == 0 or len(response[0][1]) == 0:
+                logger.warning("No stream data response for user_id: %s", user_id)
+                return user_id, None
+                
+            if b'channel_data' not in response[0][1][0][1]:
+                logger.warning("Invalid channel data format for user_id: %s", user_id)
+                return user_id, None
+                
+            streams = response[0][1][0][1][b'channel_data'].decode('utf-8')
+            streams = json.loads(streams)
+            
+            return user_id, streams
+            
+        except Exception as e:
+            logger.exception("Error in fetch_user_stream_data: %s", str(e))
+            return None, None
+    
+    def on_shoutout_button_clicked(self, button):
+        logger.info("Shoutout button clicked, closing application")
+        self.quit()
+    
+    def on_copy_button_clicked(self, button, channel_name):
+        logger.info("Initiating shoutout for channel: %s", channel_name)
+
+        # First copy the name to clipboard for convenience
+        self.copy_to_clipboard(channel_name)
+
+        # Get user and stream data
+        user_id, streams = self.fetch_user_stream_data(channel_name)
+
+        if not user_id:
+            logger.error("Could not get user_id for %s", channel_name)
+            self.quit()
+            return
+
+        # If we have stream data, create a proper shoutout message
+        if streams and "data" in streams:
+            stream = streams["data"]
+            game_name = stream.get("game_name", "Unknown Game")
+            title = stream.get("title", "No Title")
+
+            # Build twitch URL for the user
+            twitch_url = f'https://www.twitch.tv/{channel_name}'
+
+            # Create shoutout message with the same format as in shoutout.py
+            shoutout_message = f'You should check out {channel_name} was last playing =>{game_name}<= with the title: {title}! 🐰🐻 at {twitch_url}'
+
+            # Send to Redis
+            self.send_announcement_to_redis(shoutout_message)
+            self.send_shoutout_to_redis(user_id)
+
+            # Send additional info with slight delay
+            time.sleep(0.2)
+            send_admin_message_to_redis(f"Game: {game_name}", command="shoutout")
+            time.sleep(0.2)
+            send_admin_message_to_redis(f"Title: {title}", command="shoutout")
+
+            logger.info("Shoutout completed for: %s", channel_name)
+        else:
+            logger.warning("No stream data found for: %s, sending basic shoutout", channel_name)
+            # Send a simpler shoutout if we don't have stream data
+            twitch_url = f'https://www.twitch.tv/{channel_name}'
+            shoutout_message = f'You should check out {channel_name}! 🐰🐻 at {twitch_url}'
+            self.send_announcement_to_redis(shoutout_message)
+            if user_id:
+                self.send_shoutout_to_redis(user_id)
+
+        # Close the application
+        self.quit()
 
 if __name__ == "__main__":
     app = TwitchChannelSearchApp()
