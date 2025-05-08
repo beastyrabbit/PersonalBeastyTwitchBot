@@ -4,7 +4,7 @@ import os
 import threading
 import time
 import uuid
-
+from datetime import datetime
 import gi
 import pyperclip
 import requests
@@ -16,7 +16,8 @@ gi.require_version('Gtk', '4.0')
 gi.require_version('Gdk', '4.0')
 from gi.repository import Gtk, Gdk, GLib, Gio
 from module.message_utils import send_admin_message_to_redis, send_message_to_redis
-from module.shared_redis import redis_client
+from module.shared_redis import redis_client, redis_client_env
+
 
 # Constants
 TWITCH_BUTTON_CSS = """
@@ -39,15 +40,118 @@ REDIS_CHANNEL_SHOUTOUT_COMMAND = 'twitch.command.shoutout'
 REDIS_REQUEST_STREAM = 'request_stream'
 REDIS_RESPONSE_STREAM_PREFIX = 'response_stream:'
 
+# Twitch API constants
+TWITCH_CLIENT_ID = redis_client_env.get("TWITCH_CLIENT_ID").decode('utf-8') if redis_client_env.exists("TWITCH_CLIENT_ID") else None
+BROADCASTER_ID = "29319793"  # Your broadcaster ID
+
+# Blacklist for viewers that should be excluded
+VIEWER_BLACKLIST = ["StreamElements", "Sery_Bot", "KofiStreamBot", "beastyhelper"]
+
 # Configure logger - use INFO level for better debugging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
+
+# Token management functions
+def load_token():
+    """Load token from Redis database."""
+    token_data = redis_client_env.get("twitch_token_main")
+    if token_data:
+        return json.loads(token_data)
+    return None
+
+def get_valid_token():
+    """Ensure a valid token is available."""
+    token_data = load_token()
+    if token_data:
+        expires_at = datetime.fromisoformat(token_data['expires_at'])
+        if datetime.now() < expires_at:
+            return token_data['access_token']  # Token is valid
+        logger.warning('Token expired, please refresh it')
+    return None  # Token expired or missing
+
+def get_current_viewers():
+    """Fetch current viewers from Twitch API."""
+    viewers = []
+
+    # Get valid token
+    access_token = get_valid_token()
+    if not access_token or not TWITCH_CLIENT_ID:
+        logger.error("Missing access token or client ID")
+        return viewers
+
+    # Set up headers
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Client-Id": TWITCH_CLIENT_ID
+    }
+
+    # Make API request to get chatters
+    url = f"https://api.twitch.tv/helix/chat/chatters"
+    params = {
+        "broadcaster_id": BROADCASTER_ID,
+        "moderator_id": BROADCASTER_ID,
+        "first": 1000  # Maximum allowed by the API
+    }
+
+    try:
+        response = requests.get(url, headers=headers, params=params)
+        if response.status_code == 200:
+            data = response.json()
+            user_ids = []
+
+            # First, collect all viewer data and their IDs
+            for user in data.get("data", []):
+                # Skip blacklisted viewers
+                if user["user_name"] in VIEWER_BLACKLIST:
+                    logger.info(f"Skipping blacklisted viewer: {user['user_name']}")
+                    continue
+
+                # Create a viewer entry in the same format as channels
+                viewer = {
+                    "broadcaster_id": user["user_id"],
+                    "broadcaster_name": user["user_name"],
+                    "is_viewer": True  # Flag to identify as viewer
+                }
+                viewers.append(viewer)
+                user_ids.append(user["user_id"])
+
+            logger.info(f"Fetched {len(viewers)} current viewers")
+
+            # Now fetch profile images for all viewers in batches of 100 (API limit)
+            if user_ids:
+                for i in range(0, len(user_ids), 100):
+                    batch_ids = user_ids[i:i+100]
+                    user_info_url = "https://api.twitch.tv/helix/users"
+                    user_params = {"id": batch_ids}
+
+                    try:
+                        user_resp = requests.get(user_info_url, headers=headers, params=user_params)
+                        if user_resp.status_code == 200:
+                            user_data = user_resp.json()
+
+                            # Map user data to viewers
+                            for user_info in user_data.get("data", []):
+                                for viewer in viewers:
+                                    if viewer["broadcaster_id"] == user_info["id"]:
+                                        viewer["profile_image_url"] = user_info["profile_image_url"]
+                                        break
+                        else:
+                            logger.error(f"Failed to fetch user profiles: {user_resp.status_code} - {user_resp.text}")
+                    except Exception as e:
+                        logger.error(f"Error fetching user profiles: {str(e)}")
+        else:
+            logger.error(f"Failed to fetch viewers: {response.status_code} - {response.text}")
+    except Exception as e:
+        logger.error(f"Error fetching viewers: {str(e)}")
+
+    return viewers
 
 class TwitchChannelSearchApp(Gtk.Application):
     def __init__(self):
         super().__init__(application_id="com.example.twitchsearch")
         self.connect("activate", self.on_activate)
         self.channels = []
+        self.viewers = []  # List to store current viewers
         self.filtered_channels = []
         self.channel_icons = {}
         self.search_index = {}  # For faster searching
@@ -78,7 +182,7 @@ class TwitchChannelSearchApp(Gtk.Application):
 
         # Search entry expands to fill available space
         self.search_entry = Gtk.SearchEntry()
-        self.search_entry.set_placeholder_text("Search channels...")
+        self.search_entry.set_placeholder_text("Search channels and viewers...")
         self.search_entry.set_hexpand(True)  # Expand horizontally
         self.search_entry.connect("search-changed", self.on_search_changed)
         self.search_entry.connect("activate", self.on_search_activated)
@@ -95,7 +199,12 @@ class TwitchChannelSearchApp(Gtk.Application):
         self.list_view.connect("activate", self.on_item_activated)
         scrolled.set_child(self.list_view)
 
+        # Load initial data
         self.load_channels()
+
+        # Set up periodic refresh of viewers (every 60 seconds)
+        GLib.timeout_add_seconds(60, self.refresh_viewers)
+
         self.win.present()
 
     def create_list_factory(self):
@@ -145,13 +254,24 @@ class TwitchChannelSearchApp(Gtk.Application):
         channel = next((c for c in self.filtered_channels if c["broadcaster_id"] == channel_id), None)
 
         if channel:
-            label.set_text(channel["broadcaster_name"])
+            # Check if this is a viewer
+            is_viewer = channel.get("is_viewer", False)
+
+            # Set the label text - add a "👁️" icon for viewers
+            if is_viewer:
+                label.set_text(f"👁️ {channel['broadcaster_name']} (Viewer)")
+            else:
+                label.set_text(channel["broadcaster_name"])
 
             # Connect button to shoutout handler
             button.connect("clicked", self.on_shoutout_button_clicked, channel["broadcaster_name"])
 
             # Set default icon first
-            image.set_from_icon_name("user-info-symbolic")
+            if is_viewer:
+                # Use a different icon for viewers initially
+                image.set_from_icon_name("avatar-default-symbolic")
+            else:
+                image.set_from_icon_name("user-info-symbolic")
 
             # Check if we already have the icon cached (using lock)
             with self.icon_lock:
@@ -165,7 +285,9 @@ class TwitchChannelSearchApp(Gtk.Application):
                 list_item.loading_icon = True
                 profile_url = channel.get("profile_image_url")
                 if profile_url:
-                    logger.info("Loading icon for channel %s from %s", channel_id, profile_url)
+                    logger.info("Loading icon for %s from %s", 
+                               "viewer" if is_viewer else "channel", 
+                               profile_url)
                     # Load icon in a separate thread
                     threading.Thread(
                         target=self.load_channel_icon_threaded,
@@ -217,12 +339,13 @@ class TwitchChannelSearchApp(Gtk.Application):
 
     def load_channels(self):
         """
-        Load channel data from the JSON file.
+        Load channel data from the JSON file and current viewers from Twitch API.
 
         This method:
         1. Loads the channel data from the JSON file
-        2. Builds the search index
-        3. Shows the initial channels in the list view
+        2. Fetches current viewers from Twitch API
+        3. Builds the search index
+        4. Shows the initial channels in the list view
         """
         try:
             # Get the full path to the JSON file
@@ -235,11 +358,24 @@ class TwitchChannelSearchApp(Gtk.Application):
                 logger.info("Loaded channels: %d from %s", len(self.channels), json_path)
                 logger.debug("JSON file content: %s", self.channels)
 
+                # Fetch current viewers from Twitch API
+                self.viewers = get_current_viewers()
+                logger.info("Loaded viewers: %d", len(self.viewers))
+
                 # Build search index for faster matching
                 self.build_search_index()
 
-                # Show initial channels (first 10 items)
-                self.filtered_channels = self.channels[:10]
+                # Show initial list with both channels and viewers
+                # Combine channels and viewers, but limit to 10 items total
+                combined_list = []
+                # Add all viewers first
+                combined_list.extend(self.viewers)
+                # Add channels until we reach 10 items or run out of channels
+                remaining_slots = 10 - len(combined_list)
+                if remaining_slots > 0:
+                    combined_list.extend(self.channels[:remaining_slots])
+
+                self.filtered_channels = combined_list
                 self.update_list_view()
             else:
                 logger.warning("No channel data found. File %s does not exist.", json_path)
@@ -255,12 +391,21 @@ class TwitchChannelSearchApp(Gtk.Application):
         Build a search index for faster matching.
 
         Creates a simple list with just the broadcaster names in lowercase
-        for efficient fuzzy searching.
+        for efficient fuzzy searching. Includes both followed channels and current viewers.
         """
         self.search_index = []
+
+        # Add followed channels to search index
         for channel in self.channels:
             name = channel["broadcaster_name"].lower()
             self.search_index.append(name)
+
+        # Add current viewers to search index
+        for viewer in self.viewers:
+            name = viewer["broadcaster_name"].lower()
+            # Only add if not already in the index (to avoid duplicates)
+            if name not in self.search_index:
+                self.search_index.append(name)
 
 
     def on_search_changed(self, entry):
@@ -283,7 +428,7 @@ class TwitchChannelSearchApp(Gtk.Application):
         """
         Perform the actual search operation.
 
-        Uses fuzzy matching to find channels that match the search query.
+        Uses fuzzy matching to find channels and viewers that match the search query.
 
         Returns:
             bool: Always False to stop the GLib timeout callback
@@ -295,14 +440,24 @@ class TwitchChannelSearchApp(Gtk.Application):
             # Show first 10 channels if no query
             self.filtered_channels = self.channels[:10]
         else:
-            # Use fuzzy matching to find channels
-            proc_result = process.extract(query, self.search_index, limit=10)
+            # Use fuzzy matching to find channels and viewers
+            proc_result = process.extract(query, self.search_index, limit=20)  # Increased limit to accommodate viewers
             self.filtered_channels = []
+
             for result_name in proc_result:
-                # Find the channel with the matching name
+                # First check if it's a followed channel
                 channel = next((c for c in self.channels if c["broadcaster_name"].lower() == result_name[0]), None)
                 if channel:
                     self.filtered_channels.append(channel)
+                    continue
+
+                # If not a followed channel, check if it's a viewer
+                viewer = next((v for v in self.viewers if v["broadcaster_name"].lower() == result_name[0]), None)
+                if viewer:
+                    self.filtered_channels.append(viewer)
+
+            # Limit to top 10 results
+            self.filtered_channels = self.filtered_channels[:10]
 
         self.update_list_view()
         return False
@@ -350,6 +505,33 @@ class TwitchChannelSearchApp(Gtk.Application):
         redis_client.publish(REDIS_CHANNEL_SHOUTOUT_COMMAND, json.dumps(message_obj))
         logger.info("Shoutout command sent for username: %s", username)
 
+
+    def refresh_viewers(self):
+        """
+        Refresh the list of current viewers.
+
+        This method:
+        1. Fetches the latest viewer list from Twitch API
+        2. Updates the search index
+        3. If a search is active, updates the search results
+
+        Returns:
+            bool: Always True to keep the timer active
+        """
+        logger.info("Refreshing viewer list...")
+
+        # Fetch current viewers
+        self.viewers = get_current_viewers()
+        logger.info("Updated viewers: %d", len(self.viewers))
+
+        # Rebuild search index
+        self.build_search_index()
+
+        # If there's an active search, refresh the results
+        if self.search_entry.get_text():
+            self.perform_search()
+
+        return True  # Return True to keep the timer active
 
     def on_shoutout_button_clicked(self, button, channel_name):
 

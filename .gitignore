@@ -25,6 +25,7 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
+.junie/
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
@@ -255,3 +256,5 @@ fabric.properties
 /DONOTOPEN/
 /opendeck/fuzzy_search/followed_channels.json
 migration_log.jsonl
+/.junie/
+
