@@ -84,7 +84,7 @@ for message in pubsub.listen():
 
                 # Send the announcement and shoutout
                 send_announcement_to_redis(announce)
-                send_shoutout_to_redis(user_id)
+                send_shoutout_to_redis(name)
 
                 # Send admin messages
                 if game_name:
