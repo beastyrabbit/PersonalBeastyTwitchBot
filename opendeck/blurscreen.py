@@ -19,12 +19,16 @@ def handle_exit(signum, frame):
 ##########################
 
 
-def toggle_filter(filter_name, state=None):
+def toggle_filter(filter_name, scene_name=None, source_name=None, state=None):
     """
-    Toggle a filter on the current scene.
+    Toggle a filter on a specific scene and source.
 
     Args:
         filter_name (str): The name of the filter to toggle
+        scene_name (str, optional): The name of the scene containing the filter.
+                                   If None, uses the current scene.
+        source_name (str, optional): The name of the source containing the filter.
+                                    If None, applies to the scene itself.
         state (bool, optional): If provided, set the filter to this state.
                                If None, toggle the current state.
 
@@ -38,11 +42,18 @@ def toggle_filter(filter_name, state=None):
         return False
 
     try:
-        # Get the current scene name
-        current_scene = obs_client.get_current_program_scene().current_program_scene_name
+        # Get the scene name (current scene if not specified)
+        if scene_name is None:
+            scene_name = obs_client.get_current_program_scene().current_program_scene_name
 
-        # Get the list of filters on the current scene
-        filters = obs_client.get_source_filter_list(current_scene).filters
+        # Determine the target (scene or source)
+        target_name = source_name if source_name is not None else scene_name
+
+        # Get the list of filters on the target
+        if source_name is not None:
+            filters = obs_client.get_source_filter_list(source_name).filters
+        else:
+            filters = obs_client.get_source_filter_list(scene_name).filters
 
         # Check if the filter exists
         filter_exists = any(filter["filterName"] == filter_name for filter in filters)
@@ -58,13 +69,18 @@ def toggle_filter(filter_name, state=None):
             else:
                 new_state = state
 
-            send_admin_message_to_redis(f"Filter '{filter_name}' toggled {'on' if new_state else 'off'}", command="obs")
+            target_description = f"source '{source_name}'" if source_name else f"scene '{scene_name}'"
+            send_admin_message_to_redis(f"Filter '{filter_name}' on {target_description} toggled {'on' if new_state else 'off'}", command="obs")
 
             # Set the filter to the new state
-            obs_client.set_source_filter_enabled(current_scene, filter_name, new_state)
+            if source_name is not None:
+                obs_client.set_source_filter_enabled(source_name, filter_name, new_state)
+            else:
+                obs_client.set_source_filter_enabled(scene_name, filter_name, new_state)
             return True
         else:
-            print(f"Filter '{filter_name}' not found on scene '{current_scene}'")
+            target_description = f"source '{source_name}'" if source_name else f"scene '{scene_name}'"
+            print(f"Filter '{filter_name}' not found on {target_description}")
             return False
 
     except Exception as e:
@@ -74,4 +90,4 @@ def toggle_filter(filter_name, state=None):
 ##########################
 # Main
 ##########################
-toggle_filter("MyBlur")
+toggle_filter("Blur: Elgato", scene_name="Scene Fullscreen", source_name="Elgato Capture")
