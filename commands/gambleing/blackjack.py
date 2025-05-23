@@ -20,7 +20,14 @@ from threading import Thread, Lock
 
 from module.shared_redis import redis_client, pubsub
 
-from module.message_utils import send_admin_message_to_redis, send_message_to_redis, register_exit_handler
+from module.message_utils import send_system_message_to_redis, send_message_to_redis, register_exit_handler
+from module.message_utils import log_startup, log_info, log_error, log_debug, log_warning
+
+##########################
+# Configuration
+##########################
+# Set the log level for this command
+LOG_LEVEL = "INFO"  # Use "DEBUG", "INFO", "WARNING", "ERROR", or "CRITICAL"
 
 ##########################
 # Initialize
@@ -155,7 +162,7 @@ def start_game_timer():
         with game_lock:
             state = get_game_state()
             players = get_game_players()
-            
+
             if state['state'] == STATE_JOINING:
                 if players:
                     # Start the game with joined players
@@ -165,7 +172,7 @@ def start_game_timer():
                     state['state'] = STATE_IDLE
                     save_game_state(state)
                     send_message_to_redis("No players joined the Blackjack game. Game cancelled.")
-            
+
             elif state['state'] == STATE_PLAYING:
                 # Time's up for current player
                 current_index = state['current_player_index']
@@ -173,14 +180,14 @@ def start_game_timer():
                     # Auto-stand for current player
                     username = players[current_index]
                     player_data = get_player_data(username)
-                    
+
                     if player_data:
                         send_message_to_redis(f"@{player_data['display_name']} took too long to decide. Standing with {format_hand(player_data['hand'])} ({calculate_hand_value(player_data['hand'])})")
-                        
+
                         # Move to next player
                         state['current_player_index'] += 1
                         save_game_state(state)
-                        
+
                         if state['current_player_index'] >= len(players):
                             # All players have played, dealer's turn
                             dealer_turn(state, players)
@@ -190,7 +197,7 @@ def start_game_timer():
                             next_player_data = get_player_data(next_player)
                             send_message_to_redis(f"@{next_player_data['display_name']}'s turn. Your hand: {format_hand(next_player_data['hand'])} ({calculate_hand_value(next_player_data['hand'])}). Type !blackjack hit or !blackjack stand")
                             start_game_timer()
-                    
+
     thread = Thread(target=timer_thread)
     thread.daemon = True
     thread.start()
@@ -203,7 +210,7 @@ def start_game(state, players):
     state['current_player_index'] = 0
     state['deck'] = create_new_deck()
     save_game_state(state)
-    
+
     # Deal initial cards
     for _ in range(2):  # Two rounds of dealing
         # Deal to each player first
@@ -211,28 +218,28 @@ def start_game(state, players):
             player_data = get_player_data(username)
             deal_card(state, player_data['hand'])
             save_player_data(username, player_data)
-        
+
         # Then deal to dealer
         deal_card(state, state['dealer_hand'])
-    
+
     save_game_state(state)
-    
+
     # Show dealer's up card
     dealer_up_card = state['dealer_hand'][0]
     send_message_to_redis(f"Dealer shows: {format_card(dealer_up_card)}")
-    
+
     # First player's turn
     if players:
         first_player = players[0]
         player_data = get_player_data(first_player)
         hand_value = calculate_hand_value(player_data['hand'])
-        
+
         # Check for natural blackjack
         if hand_value == 21:
             send_message_to_redis(f"@{player_data['display_name']} has Blackjack! {format_hand(player_data['hand'])}")
             state['current_player_index'] += 1
             save_game_state(state)
-            
+
             if state['current_player_index'] >= len(players):
                 # All players have blackjack or have played, dealer's turn
                 dealer_turn(state, players)
@@ -250,9 +257,9 @@ def dealer_turn(state, players):
     """Dealer's turn after all players have played"""
     state['state'] = STATE_DEALER_TURN
     save_game_state(state)
-    
+
     send_message_to_redis(f"Dealer's turn. Dealer's hand: {format_hand(state['dealer_hand'])}")
-    
+
     # Dealer hits until 17 or higher
     dealer_value = calculate_hand_value(state['dealer_hand'])
     while dealer_value < 17:
@@ -260,9 +267,9 @@ def dealer_turn(state, players):
         dealer_value = calculate_hand_value(state['dealer_hand'])
         send_message_to_redis(f"Dealer draws: {format_card(new_card)}. Hand: {format_hand(state['dealer_hand'])} ({dealer_value})")
         time.sleep(1)  # Pause for drama
-    
+
     save_game_state(state)
-    
+
     # Determine winners
     end_game(state, players)
 
@@ -270,33 +277,33 @@ def end_game(state, players):
     """End the game and determine winners"""
     state['state'] = STATE_GAME_OVER
     save_game_state(state)
-    
+
     dealer_value = calculate_hand_value(state['dealer_hand'])
     dealer_bust = dealer_value > 21
-    
+
     if dealer_bust:
         send_message_to_redis(f"Dealer busts with {dealer_value}!")
     else:
         send_message_to_redis(f"Dealer stands with {dealer_value}.")
-    
+
     # Process each player's results
     for username in players:
         player_data = get_player_data(username)
         if not player_data:
             continue
-            
+
         player_value = calculate_hand_value(player_data['hand'])
         player_bust = player_value > 21
         bet_amount = player_data['bet']
         user_key = f"user:{username}"
-        
+
         # Get user data
         if redis_client.exists(user_key):
             user_json = redis_client.get(user_key)
             user = json.loads(user_json)
         else:
             continue
-            
+
         # Initialize gambling stats if they don't exist
         if "gambling" not in user:
             user["gambling"] = {
@@ -305,7 +312,7 @@ def end_game(state, players):
                 "wins": 0,
                 "losses": 0
             }
-        
+
         # Determine outcome
         if player_bust:
             # Player busts, loses bet
@@ -335,16 +342,16 @@ def end_game(state, players):
             result_message = f"@{player_data['display_name']} loses {bet_amount} dustbunnies with {player_value} vs dealer's {dealer_value}."
             user["gambling"]["results"] = user["gambling"].get("results", 0) - bet_amount
             user["gambling"]["losses"] = user["gambling"].get("losses", 0) + bet_amount
-        
+
         # Save user data
         redis_client.set(user_key, json.dumps(user))
         send_message_to_redis(result_message)
-    
+
     # Clean up game data
     for username in players:
         player_key = f"game:blackjack:player:{username}"
         redis_client.delete(player_key)
-    
+
     # Reset game state after a short delay
     time.sleep(5)
     state['state'] = STATE_IDLE
@@ -359,37 +366,57 @@ def handle_blackjack(message_obj):
         username_lower = message_obj["author"]["name"].lower()
         user_key = f"user:{username_lower}"
         mention = message_obj["author"]["mention"]
-        
+
         # Get command content (action and any arguments)
         content = message_obj.get('content', '')
+
+        log_info(f"Processing blackjack command from {username}", "blackjack", {
+            "user": username,
+            "content": content
+        })
+
         if not content:
+            log_warning(f"User {username} used blackjack command without an action", "blackjack")
             send_message_to_redis(f"{mention} Please specify an action: join, hit, stand, double, or split.")
             return
-            
+
         content_parts = content.strip().split()
         action = content_parts[0].lower()
-        
+
+        log_debug(f"User {username} is attempting blackjack action: {action}", "blackjack")
+
         with game_lock:
             state = get_game_state()
             players = get_game_players()
-            
+
             # Handle different blackjack actions
             if action == 'join':
+                log_info(f"User {username} is joining blackjack game", "blackjack")
                 handle_join(state, players, username, username_lower, mention, user_key)
             elif action == 'hit':
+                log_info(f"User {username} is hitting in blackjack game", "blackjack")
                 handle_hit(state, players, username_lower, mention)
             elif action == 'stand':
+                log_info(f"User {username} is standing in blackjack game", "blackjack")
                 handle_stand(state, players, username_lower, mention)
             elif action == 'double':
+                log_info(f"User {username} is doubling down in blackjack game", "blackjack")
                 handle_double(state, players, username_lower, mention, user_key)
             elif action == 'split':
+                log_info(f"User {username} is attempting to split in blackjack game", "blackjack")
                 handle_split(state, players, username_lower, mention)
             else:
+                log_warning(f"User {username} specified invalid blackjack action: {action}", "blackjack")
                 send_message_to_redis(f"{mention} Please specify a valid action: join, hit, stand, double, or split.")
-                
+
     except Exception as e:
-        print(f"Error processing blackjack command: {e}")
-        send_admin_message_to_redis(f"Error in blackjack command: {str(e)}", "blackjack")
+        error_msg = f"Error processing blackjack command: {e}"
+        log_error(error_msg, "blackjack", {
+            "error": str(e),
+            "user": message_obj.get("author", {}).get("display_name", "Unknown"),
+            "content": message_obj.get("content", "")
+        })
+        send_system_message_to_redis(f"Error in blackjack command: {str(e)}", "blackjack")
 
 def handle_join(state, players, username, username_lower, mention, user_key):
     """Handle the join action for blackjack"""
@@ -397,12 +424,12 @@ def handle_join(state, players, username, username_lower, mention, user_key):
     if state['state'] not in [STATE_IDLE, STATE_JOINING]:
         send_message_to_redis(f"{mention} A game is already in progress. Please wait for it to finish.")
         return
-        
+
     # Check if player is already in the game
     if username_lower in players:
         send_message_to_redis(f"{mention} You are already in this blackjack game.")
         return
-        
+
     # Get user data to verify they have enough points
     if redis_client.exists(user_key):
         user_json = redis_client.get(user_key)
@@ -410,18 +437,18 @@ def handle_join(state, players, username, username_lower, mention, user_key):
     else:
         send_message_to_redis(f"{mention} You don't have an account to play blackjack with.")
         return
-        
+
     # Check if user has enough dustbunnies (minimum bet is 10)
     if "dustbunnies" not in user or "collected_dustbunnies" not in user["dustbunnies"] or user["dustbunnies"].get("collected_dustbunnies", 0) < 10:
         send_message_to_redis(f"{mention} You need at least 10 dustbunnies to play blackjack.")
         return
-        
+
     # Set initial bet amount (can be adjusted later)
     bet_amount = 10
-    
+
     # Remove bet from user's balance
     user["dustbunnies"]["collected_dustbunnies"] -= bet_amount
-    
+
     # Initialize gambling stats if they don't exist
     if "gambling" not in user:
         user["gambling"] = {
@@ -430,13 +457,13 @@ def handle_join(state, players, username, username_lower, mention, user_key):
             "wins": 0,
             "losses": 0
         }
-        
+
     # Record gambling attempt
     user["gambling"]["input"] = user["gambling"].get("input", 0) + bet_amount
-    
+
     # Save user data
     redis_client.set(user_key, json.dumps(user))
-    
+
     # Create player data for the game
     player_data = {
         'username': username_lower,
@@ -446,11 +473,11 @@ def handle_join(state, players, username, username_lower, mention, user_key):
         'status': 'active'
     }
     save_player_data(username_lower, player_data)
-    
+
     # Add player to the game
     players.append(username_lower)
     save_game_players(players)
-    
+
     # Start joining phase if not already started
     if state['state'] == STATE_IDLE:
         state['state'] = STATE_JOINING
@@ -466,40 +493,40 @@ def handle_hit(state, players, username_lower, mention):
     if state['state'] != STATE_PLAYING:
         send_message_to_redis(f"{mention} No blackjack game is currently in the playing phase.")
         return
-        
+
     if username_lower not in players:
         send_message_to_redis(f"{mention} You are not in this blackjack game.")
         return
-        
+
     # Check if it's this player's turn
     current_index = state['current_player_index']
     if current_index >= len(players) or players[current_index] != username_lower:
         send_message_to_redis(f"{mention} It's not your turn yet.")
         return
-        
+
     # Get player data
     player_data = get_player_data(username_lower)
     if not player_data:
         send_message_to_redis(f"{mention} Error retrieving your game data.")
         return
-        
+
     # Deal a new card
     new_card = deal_card(state, player_data['hand'])
     save_player_data(username_lower, player_data)
     save_game_state(state)
-    
+
     # Calculate new hand value
     hand_value = calculate_hand_value(player_data['hand'])
     send_message_to_redis(f"{mention} hits and gets {format_card(new_card)}. Hand: {format_hand(player_data['hand'])} ({hand_value})")
-    
+
     # Check if player busts
     if hand_value > 21:
         send_message_to_redis(f"{mention} busts with {hand_value}!")
-        
+
         # Move to next player
         state['current_player_index'] += 1
         save_game_state(state)
-        
+
         if state['current_player_index'] >= len(players):
             # All players have played, dealer's turn
             dealer_turn(state, players)
@@ -511,11 +538,11 @@ def handle_hit(state, players, username_lower, mention):
             start_game_timer()
     elif hand_value == 21:
         send_message_to_redis(f"{mention} has 21!")
-        
+
         # Move to next player
         state['current_player_index'] += 1
         save_game_state(state)
-        
+
         if state['current_player_index'] >= len(players):
             # All players have played, dealer's turn
             dealer_turn(state, players)
@@ -531,31 +558,31 @@ def handle_stand(state, players, username_lower, mention):
     if state['state'] != STATE_PLAYING:
         send_message_to_redis(f"{mention} No blackjack game is currently in the playing phase.")
         return
-        
+
     if username_lower not in players:
         send_message_to_redis(f"{mention} You are not in this blackjack game.")
         return
-        
+
     # Check if it's this player's turn
     current_index = state['current_player_index']
     if current_index >= len(players) or players[current_index] != username_lower:
         send_message_to_redis(f"{mention} It's not your turn yet.")
         return
-        
+
     # Get player data
     player_data = get_player_data(username_lower)
     if not player_data:
         send_message_to_redis(f"{mention} Error retrieving your game data.")
         return
-        
+
     # Player stands
     hand_value = calculate_hand_value(player_data['hand'])
     send_message_to_redis(f"{mention} stands with {format_hand(player_data['hand'])} ({hand_value})")
-    
+
     # Move to next player
     state['current_player_index'] += 1
     save_game_state(state)
-    
+
     if state['current_player_index'] >= len(players):
         # All players have played, dealer's turn
         dealer_turn(state, players)
@@ -571,28 +598,28 @@ def handle_double(state, players, username_lower, mention, user_key):
     if state['state'] != STATE_PLAYING:
         send_message_to_redis(f"{mention} No blackjack game is currently in the playing phase.")
         return
-        
+
     if username_lower not in players:
         send_message_to_redis(f"{mention} You are not in this blackjack game.")
         return
-        
+
     # Check if it's this player's turn
     current_index = state['current_player_index']
     if current_index >= len(players) or players[current_index] != username_lower:
         send_message_to_redis(f"{mention} It's not your turn yet.")
         return
-        
+
     # Get player data
     player_data = get_player_data(username_lower)
     if not player_data:
         send_message_to_redis(f"{mention} Error retrieving your game data.")
         return
-        
+
     # Check if player has exactly 2 cards (required for doubling)
     if len(player_data['hand']) != 2:
         send_message_to_redis(f"{mention} You can only double down on your initial two cards.")
         return
-        
+
     # Get user data to verify they have enough points for doubling
     if redis_client.exists(user_key):
         user_json = redis_client.get(user_key)
@@ -600,36 +627,36 @@ def handle_double(state, players, username_lower, mention, user_key):
     else:
         send_message_to_redis(f"{mention} Error retrieving your account data.")
         return
-        
+
     # Check if user has enough dustbunnies to double bet
     current_bet = player_data['bet']
     if "dustbunnies" not in user or "collected_dustbunnies" not in user["dustbunnies"] or user["dustbunnies"].get("collected_dustbunnies", 0) < current_bet:
         send_message_to_redis(f"{mention} You don't have enough dustbunnies to double your bet.")
         return
-        
+
     # Double the bet
     user["dustbunnies"]["collected_dustbunnies"] -= current_bet
     user["gambling"]["input"] = user["gambling"].get("input", 0) + current_bet
     redis_client.set(user_key, json.dumps(user))
-    
+
     player_data['bet'] *= 2
     save_player_data(username_lower, player_data)
-    
+
     send_message_to_redis(f"{mention} doubles down! Bet is now {player_data['bet']} dustbunnies.")
-    
+
     # Deal exactly one more card
     new_card = deal_card(state, player_data['hand'])
     save_player_data(username_lower, player_data)
     save_game_state(state)
-    
+
     # Calculate new hand value
     hand_value = calculate_hand_value(player_data['hand'])
     send_message_to_redis(f"{mention} gets {format_card(new_card)}. Final hand: {format_hand(player_data['hand'])} ({hand_value})")
-    
+
     # Move to next player (player automatically stands after doubling)
     state['current_player_index'] += 1
     save_game_state(state)
-    
+
     if state['current_player_index'] >= len(players):
         # All players have played, dealer's turn
         dealer_turn(state, players)
@@ -648,15 +675,27 @@ def handle_split(state, players, username_lower, mention):
 ##########################
 # Main
 ##########################
-send_admin_message_to_redis("Blackjack command is ready to be used", "blackjack")
+# Send startup message
+log_startup("Blackjack command is ready to be used", "blackjack")
+send_system_message_to_redis("Blackjack command is running", "blackjack")
 
 # Main message loop
 for message in pubsub.listen():
     if message["type"] == "message":
         try:
             message_obj = json.loads(message['data'].decode('utf-8'))
-            print(f"Chat Command: {message_obj.get('command')} and Message: {message_obj.get('content')}")
+            command = message_obj.get('command')
+            content = message_obj.get('content', '')
+
+            log_debug(f"Received blackjack command", "blackjack", {"command": command, "content": content})
             handle_blackjack(message_obj)
+
         except Exception as e:
-            print(f"Error processing command: {e}")
-            send_admin_message_to_redis(f"Error in blackjack command: {str(e)}", "blackjack")
+            error_msg = f"Error processing blackjack command: {e}"
+            # Log the error with detailed information
+            log_error(error_msg, "blackjack", {
+                "error": str(e),
+                "traceback": str(e.__traceback__),
+                "message_data": str(message.get('data', 'N/A'))
+            })
+            send_system_message_to_redis(f"Error in blackjack command: {str(e)}", "blackjack")

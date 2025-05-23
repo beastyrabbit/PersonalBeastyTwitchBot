@@ -3,7 +3,14 @@ import random
 
 from module.shared_redis import pubsub
 
-from module.message_utils import send_admin_message_to_redis, send_message_to_redis, register_exit_handler
+from module.message_utils import send_system_message_to_redis, send_message_to_redis, register_exit_handler
+from module.message_utils import log_startup, log_info, log_error, log_debug, log_warning
+
+##########################
+# Configuration
+##########################
+# Set the log level for this command
+LOG_LEVEL = "INFO"  # Use "DEBUG", "INFO", "WARNING", "ERROR", or "CRITICAL"
 
 ##########################
 # Initialize
@@ -54,30 +61,71 @@ hug_messages = [
 ]
 
 def handle_hug_command(message_obj):
-    author = message_obj["author"]
-    username = author["display_name"]
-    mention = author["mention"]
-    content = message_obj.get("content", "")
-    if not content:
-        send_message_to_redis(f"@{username} is hugging the world! 🌍")
-        return
-    target = content.strip().split()[0]
-    if target.startswith("@"): target = target[1:]
-    target = target.lower()
-    hug_message = random.choice(hug_messages).replace("{username}", target)
-    send_message_to_redis(f"@{username} {hug_message}")
+    """
+    Handle the hug command to send a virtual hug to a user.
+
+    Args:
+        message_obj (dict): The message object containing command information
+    """
+    try:
+        author = message_obj["author"]
+        username = author["display_name"]
+        mention = author["mention"]
+        content = message_obj.get("content", "")
+
+        log_info(f"Processing hug command from {username}", "hug", {
+            "user": username,
+            "content": content
+        })
+
+        if not content:
+            log_info(f"User {username} is hugging the world", "hug")
+            send_message_to_redis(f"@{username} is hugging the world! 🌍")
+            return
+
+        target = content.strip().split()[0]
+        if target.startswith("@"): target = target[1:]
+        target = target.lower()
+
+        log_debug(f"User {username} is hugging {target}", "hug")
+        hug_message = random.choice(hug_messages).replace("{username}", target)
+        send_message_to_redis(f"@{username} {hug_message}")
+
+    except Exception as e:
+        error_msg = f"Error in handle_hug_command: {e}"
+        log_error(error_msg, "hug", {
+            "error": str(e),
+            "user": message_obj.get("author", {}).get("display_name", "Unknown")
+        })
+        print(error_msg)
 
 ##########################
 # Main
 ##########################
-send_admin_message_to_redis("Hug command is ready to be used", "hug")
+# Send startup message
+log_startup("Hug command is ready to be used", "hug")
+send_system_message_to_redis("Hug command is running", "hug")
+
+# Main message loop
 for message in pubsub.listen():
     if message["type"] == "message":
         try:
             message_obj = json.loads(message['data'].decode('utf-8'))
             command = message_obj.get('command', '').lower()
+            content = message_obj.get('content', '')
+            print(f"Chat Command: {command} and Message: {content}")
+
             if command in ["hug", "cuddle", "snuggle"]:
+                log_info(f"Received {command} command", "hug", {"content": content})
                 handle_hug_command(message_obj)
+
         except Exception as e:
-            print(f"Error processing hug command: {e}")
-            send_admin_message_to_redis(f"Error in hug command: {str(e)}",) "hug")
+            error_msg = f"Error processing hug command: {e}"
+            print(error_msg)
+            # Log the error with detailed information
+            log_error(error_msg, "hug", {
+                "error": str(e),
+                "traceback": str(e.__traceback__),
+                "message_data": str(message.get('data', 'N/A'))
+            })
+            send_system_message_to_redis(f"Error in hug command: {str(e)}", "hug")

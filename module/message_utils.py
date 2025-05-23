@@ -1,6 +1,9 @@
 import json
 import signal
 import sys
+import inspect
+import os
+from datetime import datetime
 from module.shared_redis import redis_client, pubsub
 
 ##########################
@@ -19,6 +22,160 @@ def handle_exit(signum, frame):
 def register_exit_handler():
     """Register the SIGINT handler for graceful exit."""
     signal.signal(signal.SIGINT, handle_exit)
+
+##########################
+# Logging System
+##########################
+# Log levels
+class LogLevel:
+    DEBUG = 10
+    INFO = 20
+    WARNING = 30
+    ERROR = 40
+    CRITICAL = 50
+    STARTUP = 60  # Special level for startup messages
+
+    # Map string level names to numeric values
+    LEVEL_MAP = {
+        "DEBUG": DEBUG,
+        "INFO": INFO,
+        "WARNING": WARNING,
+        "ERROR": ERROR,
+        "CRITICAL": CRITICAL,
+        "STARTUP": STARTUP
+    }
+
+    @staticmethod
+    def get_level(level_name):
+        """Convert a string level name to its numeric value."""
+        if isinstance(level_name, int):
+            return level_name
+
+        level_name = level_name.upper() if isinstance(level_name, str) else "INFO"
+        return LogLevel.LEVEL_MAP.get(level_name, LogLevel.INFO)
+
+    @staticmethod
+    def get_level_name(level):
+        """Convert a numeric level value to its string name."""
+        if level == LogLevel.DEBUG:
+            return "DEBUG"
+        elif level == LogLevel.INFO:
+            return "INFO"
+        elif level == LogLevel.WARNING:
+            return "WARNING"
+        elif level == LogLevel.ERROR:
+            return "ERROR"
+        elif level == LogLevel.CRITICAL:
+            return "CRITICAL"
+        elif level == LogLevel.STARTUP:
+            return "STARTUP"
+        else:
+            return f"LEVEL_{level}"
+
+def get_caller_info():
+    """Get information about the caller of the logging function."""
+    frame = inspect.currentframe().f_back.f_back  # Go back two frames to get the caller
+    filename = os.path.basename(frame.f_code.co_filename)
+    lineno = frame.f_lineno
+    function = frame.f_code.co_name
+    return {
+        "filename": filename,
+        "lineno": lineno,
+        "function": function
+    }
+
+def log_message(level, message, command=None, extra_data=None):
+    """Send a log message to Redis.
+
+    Args:
+        level (int or str): The log level (use LogLevel constants or string names)
+        message (str): The message content to send
+        command (str, optional): The command type for the Redis channel. Defaults to "log".
+        extra_data (dict, optional): Additional data to include in the log message.
+    """
+    if command is None:
+        command = "log"
+
+    # Convert string level to numeric if needed
+    numeric_level = LogLevel.get_level(level)
+    level_name = LogLevel.get_level_name(numeric_level)
+
+    caller_info = get_caller_info()
+
+    log_message_obj = {
+        "type": "system",
+        "source": "system",
+        "content": message,
+        "level": numeric_level,
+        "level_name": level_name,
+        "timestamp": datetime.now().isoformat(),
+        "caller": caller_info
+    }
+
+    if extra_data:
+        log_message_obj["extra_data"] = extra_data
+
+    redis_client.publish(f'system.log.{command}', json.dumps(log_message_obj))
+
+def log_debug(message, command=None, extra_data=None):
+    """Send a debug log message to Redis.
+
+    Args:
+        message (str): The message content to send
+        command (str, optional): The command type for the Redis channel. Defaults to "log".
+        extra_data (dict, optional): Additional data to include in the log message.
+    """
+    log_message("DEBUG", message, command, extra_data)
+
+def log_info(message, command=None, extra_data=None):
+    """Send an info log message to Redis.
+
+    Args:
+        message (str): The message content to send
+        command (str, optional): The command type for the Redis channel. Defaults to "log".
+        extra_data (dict, optional): Additional data to include in the log message.
+    """
+    log_message("INFO", message, command, extra_data)
+
+def log_warning(message, command=None, extra_data=None):
+    """Send a warning log message to Redis.
+
+    Args:
+        message (str): The message content to send
+        command (str, optional): The command type for the Redis channel. Defaults to "log".
+        extra_data (dict, optional): Additional data to include in the log message.
+    """
+    log_message("WARNING", message, command, extra_data)
+
+def log_error(message, command=None, extra_data=None):
+    """Send an error log message to Redis.
+
+    Args:
+        message (str): The message content to send
+        command (str, optional): The command type for the Redis channel. Defaults to "log".
+        extra_data (dict, optional): Additional data to include in the log message.
+    """
+    log_message("ERROR", message, command, extra_data)
+
+def log_critical(message, command=None, extra_data=None):
+    """Send a critical log message to Redis.
+
+    Args:
+        message (str): The message content to send
+        command (str, optional): The command type for the Redis channel. Defaults to "log".
+        extra_data (dict, optional): Additional data to include in the log message.
+    """
+    log_message("CRITICAL", message, command, extra_data)
+
+def log_startup(message, command=None, extra_data=None):
+    """Send a startup log message to Redis.
+
+    Args:
+        message (str): The message content to send
+        command (str, optional): The command type for the Redis channel. Defaults to "log".
+        extra_data (dict, optional): Additional data to include in the log message.
+    """
+    log_message("STARTUP", message, command, extra_data)
 
 ##########################
 # Messaging Functions

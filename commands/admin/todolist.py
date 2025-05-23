@@ -4,7 +4,14 @@ import sys
 
 import redis
 
-from module.message_utils import send_admin_message_to_redis, send_message_to_redis
+from module.message_utils import send_message_to_redis
+from module.message_utils import log_startup, log_info, log_error, log_debug
+
+##########################
+# Configuration
+##########################
+# Set the log level for this command
+LOG_LEVEL = "INFO"  # Use "DEBUG", "INFO", "WARNING", "ERROR", or "CRITICAL"
 
 ##########################
 # Initialize
@@ -21,7 +28,8 @@ pubsub.subscribe('twitch.command.list')
 # Exit Function
 ##########################
 def handle_exit(signum, frame):
-    print("Unsubscribing from all channels bofore exiting")
+    print("Unsubscribing from all channels before exiting")
+    log_info("Todolist command shutting down", "todolist")
     pubsub.unsubscribe()
     # Place any cleanup code here
     sys.exit(0)  # Exit gracefully
@@ -31,34 +39,54 @@ signal.signal(signal.SIGINT, handle_exit)
 
 def update_display_ids():
     """Recalculates and updates display IDs for all todos"""
-    raw_todos = redis_client.lrange('todos', 0, -1)
+    try:
+        log_debug("Updating display IDs for todos", "todolist")
+        raw_todos = redis_client.lrange('todos', 0, -1)
 
-    # Process into sorted groups
-    groups = {}
-    for todo_json in raw_todos:
-        todo = json.loads(todo_json)
-        group = todo.get('group', 'default')
-        groups.setdefault(group, []).append(todo)
+        # Process into sorted groups
+        groups = {}
+        for todo_json in raw_todos:
+            try:
+                todo = json.loads(todo_json)
+                group = todo.get('group', 'default')
+                groups.setdefault(group, []).append(todo)
+            except json.JSONDecodeError as e:
+                log_error(f"Error parsing todo JSON: {e}", "todolist", {"todo_json": str(todo_json)})
+                continue
 
-    # Sort groups and flatten
-    sorted_groups = []
-    if 'default' in groups:
-        sorted_groups.append(('default', groups.pop('default')))
-    sorted_groups += sorted(groups.items())
+        # Sort groups and flatten
+        sorted_groups = []
+        if 'default' in groups:
+            sorted_groups.append(('default', groups.pop('default')))
+        sorted_groups += sorted(groups.items())
 
-    # Generate new display IDs
-    display_id = 0
-    updated_todos = []
-    for group_name, group_todos in sorted_groups:
-        for todo in group_todos:
-            display_id += 1
-            todo['display_id'] = display_id
-            updated_todos.append(json.dumps(todo))
+        # Generate new display IDs
+        display_id = 0
+        updated_todos = []
+        for group_name, group_todos in sorted_groups:
+            for todo in group_todos:
+                display_id += 1
+                todo['display_id'] = display_id
+                updated_todos.append(json.dumps(todo))
 
-    # Update Redis if changes needed
-    if updated_todos:
-        redis_client.delete('todos')
-        redis_client.rpush('todos', *updated_todos)
+        # Update Redis if changes needed
+        if updated_todos:
+            redis_client.delete('todos')
+            redis_client.rpush('todos', *updated_todos)
+            log_info(f"Updated display IDs for {len(updated_todos)} todos", "todolist", {
+                "group_count": len(sorted_groups),
+                "todo_count": len(updated_todos)
+            })
+        else:
+            log_debug("No todos to update", "todolist")
+
+    except Exception as e:
+        error_msg = f"Error updating display IDs: {e}"
+        print(error_msg)
+        log_error(error_msg, "todolist", {
+            "error": str(e),
+            "traceback": str(e.__traceback__)
+        })
 
 
 ##########################
@@ -79,7 +107,7 @@ def update_display_ids():
 #``` !todo complete <group> ```
 #``` !todo clear  ``` (clear all)
 
-send_admin_message_to_redis("Todolist command is ready to be used", "todolist")
+log_startup("Todolist command is ready to be used", "todolist")
 
 for message in pubsub.listen():
     if message["type"] == "message":
@@ -87,13 +115,24 @@ for message in pubsub.listen():
             # Parse the message
             try:
                 message_obj = json.loads(message['data'].decode('utf-8'))
-                print(f"Chat Command: {message_obj.get('command')} and Message: {message_obj.get('content')}")
+                command = message_obj.get('command')
+                content = message_obj.get('content')
+                user = message_obj["author"].get("display_name", "Unknown")
+
+                print(f"Chat Command: {command} and Message: {content}")
+                log_info(f"Received todolist command from {user}", "todolist", {
+                    "command": command,
+                    "content": content
+                })
             except (json.JSONDecodeError, UnicodeDecodeError) as e:
-                print(f"Error parsing message: {e}")
+                error_msg = f"Error parsing message: {e}"
+                print(error_msg)
+                log_error(error_msg, "todolist", {"error": str(e)})
                 continue
 
             # Check if the user is the broadcaster
             if not message_obj["author"]["broadcaster"]:
+                log_info(f"Non-broadcaster {user} attempted to use todolist command", "todolist")
                 send_message_to_redis('🚨 Only the broadcaster can use this command 🚨', command="todolist")
                 continue
 
@@ -102,12 +141,20 @@ for message in pubsub.listen():
 
             # Check if there are enough arguments
             if len(message_content) < 2:
+                log_info(f"Invalid command format from {user}", "todolist", {"content": content})
                 send_message_to_redis('❌ Invalid command format. Use !todo <add|remove|complete|clear> [args]', command="todolist")
                 continue
 
             # first we check what subcommand is being used
+            log_debug(f"Processing subcommand: {message_content[1]}", "todolist")
         except Exception as e:
-            print(f"Error processing message: {e}")
+            error_msg = f"Error processing message: {e}"
+            print(error_msg)
+            log_error(error_msg, "todolist", {
+                "error": str(e),
+                "traceback": str(e.__traceback__),
+                "message_data": str(message.get('data', 'N/A'))
+            })
             continue
 
         # Process the command
