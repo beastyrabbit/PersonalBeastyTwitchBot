@@ -4,7 +4,7 @@ import sys
 
 import redis
 
-from module.message_utils import send_admin_message_to_redis
+from module.message_utils import send_admin_message_to_redis, send_message_to_redis
 
 ##########################
 # Initialize
@@ -64,9 +64,6 @@ def update_display_ids():
 ##########################
 # Helper Functions
 ##########################
-
-def send_message_to_redis(send_message, command="todolist"):
-    redis_client.publish('twitch.chat.send', send_message)
 
 
 ##########################

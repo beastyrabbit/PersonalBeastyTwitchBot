@@ -6,6 +6,7 @@ import sys
 from git import Repo
 import os
 import redis
+from module.message_utils import send_system_message_to_redis, send_admin_message_to_redis, send_message_to_redis
 
 ##########################
 # Initialize
@@ -15,8 +16,10 @@ redis_client_env = redis.Redis(host='192.168.50.115', port=6379, db=1)
 pubsub = redis_client.pubsub()
 pubsub.subscribe('twitch.command.system')
 pubsub.subscribe('twitch.command.sys')
-services_managed = ["brb","unbrb","discord","shoutout","todolist","collect","invest","give","roomba","steal","lurk","points","suika","timer","timezone","unlurk","blackjack","gamble","slots","accept","fight","translate","hug","gameoflife",]
-services_managed += ["move_fishing","admin_logger","chat_logger","command_logger"]
+services_managed =  ["brb","unbrb","discord","shoutout","todolist","collect","invest","give","roomba","steal","lurk","points"]
+services_managed += ["suika","timer","timezone","unlurk","blackjack","gamble","slots","accept","fight"]
+services_managed += ["translate","hug","gameoflife"]
+services_managed += ["move_fishing","system_logger","chat_logger","command_logger"]
 manager_service_name = "twitch-manager.service"
 running_processes = {}
 
@@ -34,22 +37,6 @@ def handle_exit(signum, frame):
 # Register signal handlers
 signal.signal(signal.SIGINT, handle_exit)   # Handle Ctrl+C
 signal.signal(signal.SIGTERM, handle_exit)  # Handle termination
-
-##########################
-# Default Message Methods
-##########################
-def send_admin_message_to_redis(message, command="brb"):
-    # Create unified message object
-    admin_message_obj = {
-        "type": "admin",
-        "source": "system",
-        "content": message,
-    }
-    redis_client.publish(f'admin.{command}.send', json.dumps(admin_message_obj))
-
-
-def send_message_to_redis(send_message, command="main_server"):
-    redis_client.publish('twitch.chat.send', send_message)
 
 
 ##########################
@@ -179,7 +166,7 @@ def execute_command(command_name, action):
 ##########################
 # Main
 ##########################
-send_admin_message_to_redis('Bunux is online', command="system")
+send_system_message_to_redis('Bunux is online', command="system")
 atexit.register(cleanup_subprocesses)
 for service in services_managed:
     execute_command(command_name=service, action="start")

@@ -3,6 +3,7 @@ from datetime import datetime
 
 import redis
 import requests
+from module.message_utils import send_system_message_to_redis, send_admin_message_to_redis, send_message_to_redis
 
 ##########################
 # Initialize
@@ -15,24 +16,6 @@ CLIENT_ID = redis_client_env.get("TWITCH_CLIENT_ID").decode('utf-8')
 ##########################
 def handle_exit(signum, frame):
     return
-
-
-
-##########################
-# Default Message Methods
-##########################
-def send_admin_message_to_redis(message, command="brb"):
-    # Create unified message object
-    admin_message_obj = {
-        "type": "admin",
-        "source": "system",
-        "content": message,
-    }
-    redis_client.publish(f'admin.{command}.send', json.dumps(admin_message_obj))
-
-
-def send_message_to_redis(send_message, command="fuzzy_search"):
-    redis_client.publish('twitch.chat.send', send_message)
 
 # Token management functions (unchanged)
 def load_token():

@@ -6,6 +6,7 @@ import sys
 from git import Repo
 import os
 import redis
+from module.message_utils import send_system_message_to_redis, send_admin_message_to_redis, send_message_to_redis
 
 ##########################
 # Initialize
@@ -33,22 +34,6 @@ def handle_exit(signum, frame):
 # Register signal handlers
 signal.signal(signal.SIGINT, handle_exit)   # Handle Ctrl+C
 signal.signal(signal.SIGTERM, handle_exit)  # Handle termination
-
-##########################
-# Default Message Methods
-##########################
-def send_admin_message_to_redis(message, command="brb"):
-    # Create unified message object
-    admin_message_obj = {
-        "type": "admin",
-        "source": "system",
-        "content": message,
-    }
-    redis_client.publish(f'admin.{command}.send', json.dumps(admin_message_obj))
-
-
-def send_message_to_redis(send_message, command="main_pc"):
-    redis_client.publish('twitch.chat.send', send_message)
 
 
 ##########################
@@ -177,7 +162,7 @@ def execute_command(command_name, action):
 ##########################
 # Main
 ##########################
-send_admin_message_to_redis('Bunux is online', command="system")
+send_system_message_to_redis('Bunux is online', command="system")
 atexit.register(cleanup_subprocesses)
 for service in services_managed:
     execute_command(command_name=service, action="start")

@@ -12,7 +12,8 @@ import redis
 REDIS_HOST = '192.168.50.115'
 REDIS_PORT = 6379
 REDIS_DB = 0
-ADMIN_COMMANDS_KEY = 'twitch:messages:admin'  # Sorted set for all admin commands
+SYSTEM_COMMANDS_KEY = 'twitch:messages:system'  # Sorted set for all system commands
+ADMIN_COMMANDS_KEY = 'twitch:messages:admin'  # Legacy key for backward compatibility
 HELPER_COMMANDS_KEY = 'twitch:messages:helper'  # Sorted set for all helper commands
 MAX_STORED_COMMANDS = 5000  # Limit to prevent unbounded growth
 
@@ -22,8 +23,8 @@ MAX_STORED_COMMANDS = 5000  # Limit to prevent unbounded growth
 redis_client = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB)
 pubsub = redis_client.pubsub()
 
-# Subscribe to admin command pattern
-pubsub.psubscribe('admin.*')
+# Subscribe to system command pattern (and admin for backward compatibility)
+pubsub.psubscribe('system.*', 'admin.*')
 
 ##########################
 # Exit Function
@@ -46,8 +47,10 @@ for message in pubsub.listen():
             message_obj = json.loads(message['data'].decode('utf-8'))
             channel = message['channel'].decode('utf-8')
 
-            # Extract admin command from channel name (admin.commandname)
-            admin_command = channel.split('.')[-1]
+            # Extract command from channel name (system.commandname or admin.commandname)
+            channel_parts = channel.split('.')
+            command_type = channel_parts[0]  # 'system' or 'admin'
+            command_name = channel_parts[-1]
 
             # Create a standard message object if one doesn't exist
             if isinstance(message_obj, str) or not isinstance(message_obj, dict):
@@ -59,7 +62,7 @@ for message in pubsub.listen():
 
             # Ensure message follows our unified structure
             if 'type' not in message_obj:
-                message_obj['type'] = 'admin'
+                message_obj['type'] = command_type  # 'system' or 'admin'
 
             if 'source' not in message_obj:
                 message_obj['source'] = 'system'
@@ -73,10 +76,12 @@ for message in pubsub.listen():
             if 'event_data' not in message_obj:
                 message_obj['event_data'] = {}
 
-            # Add admin command details
-            message_obj['event_data']['admin_command'] = admin_command
+            # Add command details
+            message_obj['event_data']['command_name'] = command_name
+            # Keep admin_command for backward compatibility
+            message_obj['event_data']['admin_command'] = command_name
 
-            # Unified user JSON logging for admin commands
+            # Unified user JSON logging for system commands
             author = message_obj.get('author', {})
             username = author.get('name') or author.get('display_name')
             if username:
@@ -89,14 +94,21 @@ for message in pubsub.listen():
                     user_json = {
                         "name": username,
                         "display_name": author.get('display_name', username),
-                        "log": {"chat": 0, "command": 0, "admin": 0, "lurk": 0, "unlurk": 0},
+                        "log": {"chat": 0, "command": 0, "admin": 0, "system": 0, "lurk": 0, "unlurk": 0},
                         "dustbunnies": {},
                         "banking": {}
                     }
                 if "log" not in user_json:
-                    user_json["log"] = {"chat": 0, "command": 0, "admin": 0, "lurk": 0, "unlurk": 0}
-                user_json["log"]["admin"] = user_json["log"].get("admin", 0) + 1
-                user_json["log"]["last_admin_command"] = admin_command
+                    user_json["log"] = {"chat": 0, "command": 0, "admin": 0, "system": 0, "lurk": 0, "unlurk": 0}
+                
+                # Increment the appropriate counter based on message type
+                if command_type == 'system':
+                    user_json["log"]["system"] = user_json["log"].get("system", 0) + 1
+                    user_json["log"]["last_system_command"] = command_name
+                else:  # 'admin' for backward compatibility
+                    user_json["log"]["admin"] = user_json["log"].get("admin", 0) + 1
+                    user_json["log"]["last_admin_command"] = command_name
+                
                 user_json["log"]["last_timestamp"] = message_obj["timestamp"]
                 redis_client.set(user_key, json.dumps(user_json))
 
@@ -107,28 +119,43 @@ for message in pubsub.listen():
             # Convert to JSON for storage
             message_json = json.dumps(message_obj)
 
-            # Store in admin commands sorted set
+            # Store in appropriate commands sorted set
             if message_obj['type'] == 'helper':
                 redis_client.zadd(HELPER_COMMANDS_KEY, {message_json: current_time})
-            else:
+            elif message_obj['type'] == 'system':
+                redis_client.zadd(SYSTEM_COMMANDS_KEY, {message_json: current_time})
+            else:  # 'admin' for backward compatibility
                 redis_client.zadd(ADMIN_COMMANDS_KEY, {message_json: current_time})
 
             # Store in all messages set too
             redis_client.zadd('twitch:messages:all', {message_json: current_time})
+            
             # Store in command-specific set for easy retrieval
-            command_key = f"twitch:admin:{admin_command}"
+            if command_type == 'system':
+                command_key = f"twitch:system:{command_name}"
+            else:  # 'admin' for backward compatibility
+                command_key = f"twitch:admin:{command_name}"
+            
             redis_client.zadd(command_key, {message_json: current_time})
 
             # Prune if exceeding max count
-            current_count = redis_client.zcard(ADMIN_COMMANDS_KEY)
-            if current_count > MAX_STORED_COMMANDS:
-                # Remove oldest commands (lowest scores)
-                redis_client.zremrangebyrank(ADMIN_COMMANDS_KEY,
-                                             0,
-                                             current_count - MAX_STORED_COMMANDS - 1)
+            if command_type == 'system':
+                current_count = redis_client.zcard(SYSTEM_COMMANDS_KEY)
+                if current_count > MAX_STORED_COMMANDS:
+                    # Remove oldest commands (lowest scores)
+                    redis_client.zremrangebyrank(SYSTEM_COMMANDS_KEY,
+                                                0,
+                                                current_count - MAX_STORED_COMMANDS - 1)
+            else:  # 'admin' for backward compatibility
+                current_count = redis_client.zcard(ADMIN_COMMANDS_KEY)
+                if current_count > MAX_STORED_COMMANDS:
+                    # Remove oldest commands (lowest scores)
+                    redis_client.zremrangebyrank(ADMIN_COMMANDS_KEY,
+                                                0,
+                                                current_count - MAX_STORED_COMMANDS - 1)
 
-            print(f"Stored admin command: {admin_command} - {message_obj.get('content', 'No content')}")
+            print(f"Stored {command_type} command: {command_name} - {message_obj.get('content', 'No content')}")
 
         except Exception as e:
-            print(f"Error processing admin command: {e}")
+            print(f"Error processing {command_type if 'command_type' in locals() else 'admin/system'} command: {e}")
             print(f"Message data: {message.get('data', 'N/A')}")

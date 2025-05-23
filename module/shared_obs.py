@@ -4,7 +4,7 @@ import time
 import threading
 import logging
 from module.shared_redis import redis_client_env
-from module.message_utils import send_admin_message_to_redis
+from module.message_utils import send_system_message_to_redis, send_admin_message_to_redis
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -56,7 +56,7 @@ obs_connection_status = {
 # Helper function to safely interact with OBS client
 def get_obs_client():
     global obs_client, obs_connection_status
-    
+
     # If we already have a client, check if it's still valid
     if obs_client is not None:
         try:
@@ -70,7 +70,7 @@ def get_obs_client():
         except Exception:
             logger.warning("OBS client connection lost, will attempt to reconnect")
             obs_client = None
-    
+
     # If we're already in the process of connecting, don't start another connection
     current_time = time.time()
     if obs_connection_status["is_connecting"]:
@@ -80,15 +80,15 @@ def get_obs_client():
         else:
             logger.info("Connection attempt already in progress")
             return None
-    
+
     # Don't attempt reconnections too frequently
     if current_time - obs_connection_status["last_attempt"] < 5:
         return None
-    
+
     # Update connection status
     obs_connection_status["is_connecting"] = True
     obs_connection_status["last_attempt"] = current_time
-    
+
     # Attempt to connect
     try:
         logger.info("Attempting to connect to OBS...")
@@ -103,11 +103,11 @@ def get_obs_client():
         # Increment failed attempts counter
         obs_connection_status["failed_attempts"] += 1
         logger.warning(f"Failed to connect to OBS: {e} (Attempt {obs_connection_status['failed_attempts']})")
-        
-        # Send admin message after 5 failed attempts if not already notified
+
+        # Send system message after 5 failed attempts if not already notified
         if obs_connection_status["failed_attempts"] >= 5 and not obs_connection_status["notified"]:
-            send_admin_message_to_redis(f"Unable to connect to OBS after {obs_connection_status['failed_attempts']} attempts. Please check if OBS is running and configured correctly.", "obs")
+            send_system_message_to_redis(f"Unable to connect to OBS after {obs_connection_status['failed_attempts']} attempts. Please check if OBS is running and configured correctly.", "obs")
             obs_connection_status["notified"] = True
-        
+
         obs_connection_status["is_connecting"] = False
         return None

@@ -23,19 +23,27 @@ def register_exit_handler():
 ##########################
 # Messaging Functions
 ##########################
-def send_admin_message_to_redis(message, command):
-    """Send an admin message to Redis.
+def send_system_message_to_redis(message, command):
+    """Send a system message to Redis.
 
     Args:
         message (str): The message content to send
-        command (str, optional): The command type for the Redis channel. Defaults to "brb".
+        command (str, optional): The command type for the Redis channel.
     """
-    admin_message_obj = {
-        "type": "admin",
+    system_message_obj = {
+        "type": "system",
         "source": "system",
         "content": message,
     }
-    redis_client.publish(f'admin.{command}.send', json.dumps(admin_message_obj))
+    redis_client.publish(f'system.{command}.send', json.dumps(system_message_obj))
+
+# Keeping backward compatibility for now
+def send_admin_message_to_redis(message, command):
+    """Deprecated: Use send_system_message_to_redis instead.
+
+    This function is kept for backward compatibility and will be removed in the future.
+    """
+    return send_system_message_to_redis(message, command)
 
 def send_message_to_redis(send_message, command=None):
     """Send a chat message to Redis.
