@@ -1,15 +1,7 @@
 #!/usr/bin/env python3
-"""
-Command Template
+"""Template for creating new command files in the TwitchBotV2 project.
 
-This template provides a standardized structure for creating new command files
-in the TwitchBotV2 project. Replace this docstring with a description of your command.
-
-Usage:
-- Copy this file to the appropriate command subdirectory
-- Rename it to your command name (e.g. mycommand.py)
-- Modify the command subscription, permissions, and logic as needed
-- Add your command function implementation
+Usage: Copy, rename, modify subscriptions and implement command logic.
 """
 import json
 
@@ -46,6 +38,10 @@ register_exit_handler()
 
 
 def handle_command(message_obj):
+    """Processes the received command message.
+
+    @param message_obj: The parsed message object from Twitch
+    """
     # Example of using OBS client with the new pattern
     obs_client = get_obs_client()
     if obs_client is not None:

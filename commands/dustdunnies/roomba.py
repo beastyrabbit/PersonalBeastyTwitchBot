@@ -5,6 +5,8 @@ from datetime import timedelta, datetime
 from module.message_utils import send_message_to_redis, register_exit_handler, send_system_message_to_redis
 from module.message_utils import log_startup, log_info, log_error, log_debug, log_warning
 from module.shared_redis import redis_client, pubsub
+from module.user_utils import normalize_username, user_exists
+from module.redis_user_utils import get_user_data, get_or_create_user
 
 ##########################
 # Configuration
@@ -32,15 +34,11 @@ register_exit_handler()
 # Helper Functions
 ##########################
 def do_the_cleaning_command(user_obj, username) -> int:
-    """
-    Check if a user is allowed to use the roomba command and generate a random number of dustbunnies.
+    """Checks if user can use roomba and generates random dustbunnies.
 
-    Args:
-        user_obj (dict): The user object of the person using the command
-        username (str): The display name of the user
-
-    Returns:
-        int: The number of dustbunnies collected (0 if user is on timeout)
+    @param user_obj: User object of the command user
+    @param username: Display name of the user
+    @return: Number of dustbunnies collected (0 if on timeout)
     """
     try:
         global timeoutList
@@ -87,36 +85,34 @@ def do_the_cleaning_command(user_obj, username) -> int:
         return 0
 
 def handle_user_data(user_obj, rnd_number_for_user):
-    """
-    Update a user's dustbunnies count in the database.
+    """Updates user's dustbunnies count in the database.
 
-    Args:
-        user_obj (dict): The user object of the person using the command
-        rnd_number_for_user (int): The number of dustbunnies to add to the user's account
+    @param user_obj: User object of the command user
+    @param rnd_number_for_user: Number of dustbunnies to add
     """
     try:
         username = user_obj.get('display_name', user_obj["name"])
-        username_lower = user_obj["name"].lower()
-        user_key = f"user:{username_lower}"
+        username_lower = normalize_username(user_obj["name"])
 
         log_debug(f"Updating user data for {username}", "roomba")
 
-        if redis_client.exists(user_key):
-            user_json = redis_client.get(user_key)
-            user = json.loads(user_json)
-            log_debug(f"Found existing user {username}", "roomba")
-        else:
-            # Create new user if not exists
-            log_info(f"Creating new user account for {username}", "roomba")
+        # Get user data
+        user = get_or_create_user(username_lower, user_obj.get("display_name"))
+
+        # Check if user data exists
+        if user is None:
+            log_info(f"User {username} exists on Twitch but not in our database", "roomba")
+            # Create a default user data structure
             user = {
-                "name": user_obj["name"],
-                "display_name": user_obj["display_name"],
+                "name": username_lower,
+                "display_name": user_obj.get("display_name", username),
                 "chat": {"count": 0},
                 "command": {"count": 0},
                 "admin": {"count": 0},
-                "dustbunnies": {},
+                "dustbunnies": {"collected_dustbunnies": 0},
                 "banking": {}
             }
+            log_debug(f"Created temporary user data for {username}", "roomba")
 
         if "dustbunnies" not in user:
             log_debug(f"Creating dustbunnies object for {username}", "roomba")
@@ -129,6 +125,8 @@ def handle_user_data(user_obj, rnd_number_for_user):
         previous_count = user["dustbunnies"].get("message_count", 0)
         user["dustbunnies"]["message_count"] = previous_count + 1
 
+        # Save updated user data
+        user_key = f"user:{username_lower}"
         redis_client.set(user_key, json.dumps(user))
 
         log_info(f"Updated user {username} dustbunnies", "roomba", {

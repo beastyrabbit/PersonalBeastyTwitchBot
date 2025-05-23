@@ -1,7 +1,8 @@
 import json
 
 from module.shared_redis import redis_client, pubsub
-
+from module.user_utils import normalize_username, user_exists
+from module.redis_user_utils import get_user_data, get_or_create_user
 from module.message_utils import send_message_to_redis, register_exit_handler
 from module.message_utils import log_startup, log_info, log_error, log_debug
 
@@ -30,18 +31,15 @@ register_exit_handler()
 ##########################
 
 def give_dustbunnies_as_mod(user_that_gives, receiving_user, amount_gives):
-    """
-    Allow a moderator or broadcaster to give dustbunnies to another user.
+    """Allows a moderator/broadcaster to give dustbunnies to another user.
 
-    Args:
-        user_that_gives (dict): The user object of the moderator/broadcaster
-        receiving_user (str): The username of the user receiving the dustbunnies
-        amount_gives (int): The amount of dustbunnies to give
+    @param user_that_gives: User object of the moderator/broadcaster
+    @param receiving_user: Username of the recipient
+    @param amount_gives: Amount of dustbunnies to give
     """
     try:
         giver_name = user_that_gives.get('display_name', 'Unknown')
-        user_that_receiving_lower = receiving_user.lower().replace("@", "")
-        user_key = f"user:{user_that_receiving_lower}"
+        user_that_receiving_lower = normalize_username(receiving_user)
 
         log_debug(f"Mod {giver_name} giving {amount_gives} dustbunnies to {receiving_user}", "give", {
             "giver": giver_name,
@@ -49,22 +47,23 @@ def give_dustbunnies_as_mod(user_that_gives, receiving_user, amount_gives):
             "amount": amount_gives
         })
 
-        if redis_client.exists(user_key):
-            user_json = redis_client.get(user_key)
-            user_data = json.loads(user_json)
-            log_debug(f"Found existing user {user_that_receiving_lower}", "give")
-        else:
-            # create new user if not exists
-            log_info(f"Creating new user account for {user_that_receiving_lower}", "give")
+        # Get user data
+        user_data = get_or_create_user(receiving_user)
+
+        # Check if user data exists
+        if user_data is None:
+            log_info(f"User {receiving_user} exists on Twitch but not in our database", "give")
+            # Create a default user data structure
             user_data = {
                 "name": user_that_receiving_lower,
                 "display_name": receiving_user.replace("@", ""),
                 "chat": {"count": 0},
                 "command": {"count": 0},
                 "admin": {"count": 0},
-                "dustbunnies": {},
+                "dustbunnies": {"collected_dustbunnies": 0},
                 "banking": {}
             }
+            log_debug(f"Created temporary user data for {user_that_receiving_lower}", "give")
 
         if "dustbunnies" not in user_data:
             log_debug(f"Creating dustbunnies object for {user_that_receiving_lower}", "give")
@@ -74,6 +73,8 @@ def give_dustbunnies_as_mod(user_that_gives, receiving_user, amount_gives):
         previous_amount = user_data["dustbunnies"].get("collected_dustbunnies", 0)
         user_data["dustbunnies"]["collected_dustbunnies"] = previous_amount + amount_gives
 
+        # Save updated user data
+        user_key = f"user:{user_that_receiving_lower}"
         redis_client.set(user_key, json.dumps(user_data))
 
         log_info(f"Mod {giver_name} gave {amount_gives} dustbunnies to {user_that_receiving_lower}", "give", {
@@ -92,18 +93,15 @@ def give_dustbunnies_as_mod(user_that_gives, receiving_user, amount_gives):
 
 
 def give_dustbunnies(user_that_gives, receiving_user, amount_gives):
-    """
-    Allow a regular user to give their own dustbunnies to another user.
+    """Allows a regular user to give their own dustbunnies to another user.
 
-    Args:
-        user_that_gives (dict): The user object of the giver
-        receiving_user (str): The username of the user receiving the dustbunnies
-        amount_gives (int): The amount of dustbunnies to give
+    @param user_that_gives: User object of the giver
+    @param receiving_user: Username of the recipient
+    @param amount_gives: Amount of dustbunnies to give
     """
     try:
         giver_name = user_that_gives.get('display_name', user_that_gives["name"])
-        giver_lower = user_that_gives["name"].lower()
-        giver_key = f"user:{giver_lower}"
+        giver_lower = normalize_username(user_that_gives["name"])
 
         log_debug(f"User {giver_name} attempting to give {amount_gives} dustbunnies to {receiving_user}", "give", {
             "giver": giver_name,
@@ -112,10 +110,8 @@ def give_dustbunnies(user_that_gives, receiving_user, amount_gives):
         })
 
         # Check if giver exists and has enough dustbunnies
-        if redis_client.exists(giver_key):
-            giver_json = redis_client.get(giver_key)
-            giver_data = json.loads(giver_json)
-
+        giver_data = get_user_data(giver_lower)
+        if giver_data:
             if "dustbunnies" not in giver_data:
                 log_debug(f"Creating dustbunnies object for giver {giver_name}", "give")
                 giver_data["dustbunnies"] = {}
@@ -133,6 +129,9 @@ def give_dustbunnies(user_that_gives, receiving_user, amount_gives):
             # Subtract from giver
             previous_bunnies = giver_data["dustbunnies"].get("collected_dustbunnies", 0)
             giver_data["dustbunnies"]["collected_dustbunnies"] = previous_bunnies - amount_gives
+
+            # Save updated giver data
+            giver_key = f"user:{giver_lower}"
             redis_client.set(giver_key, json.dumps(giver_data))
 
             log_debug(f"Subtracted {amount_gives} dustbunnies from {giver_name}", "give", {
@@ -145,25 +144,25 @@ def give_dustbunnies(user_that_gives, receiving_user, amount_gives):
             return
 
         # Process receiver
-        user_that_receiving_lower = receiving_user.lower().replace("@", "")
-        receiver_key = f"user:{user_that_receiving_lower}"
+        user_that_receiving_lower = normalize_username(receiving_user)
 
-        if redis_client.exists(receiver_key):
-            receiver_json = redis_client.get(receiver_key)
-            receiver_data = json.loads(receiver_json)
-            log_debug(f"Found existing user {user_that_receiving_lower}", "give")
-        else:
-            # Create new user if not exists
-            log_info(f"Creating new user account for {user_that_receiving_lower}", "give")
+        # Get receiver data
+        receiver_data = get_or_create_user(receiving_user)
+
+        # Check if receiver data exists
+        if receiver_data is None:
+            log_info(f"User {receiving_user} exists on Twitch but not in our database", "give")
+            # Create a default receiver data structure
             receiver_data = {
                 "name": user_that_receiving_lower,
                 "display_name": receiving_user.replace("@", ""),
                 "chat": {"count": 0},
                 "command": {"count": 0},
                 "admin": {"count": 0},
-                "dustbunnies": {},
+                "dustbunnies": {"collected_dustbunnies": 0},
                 "banking": {}
             }
+            log_debug(f"Created temporary user data for {user_that_receiving_lower}", "give")
 
         if "dustbunnies" not in receiver_data:
             log_debug(f"Creating dustbunnies object for {user_that_receiving_lower}", "give")
@@ -173,6 +172,8 @@ def give_dustbunnies(user_that_gives, receiving_user, amount_gives):
         previous_amount = receiver_data["dustbunnies"].get("collected_dustbunnies", 0)
         receiver_data["dustbunnies"]["collected_dustbunnies"] = previous_amount + amount_gives
 
+        # Save updated receiver data
+        receiver_key = f"user:{user_that_receiving_lower}"
         redis_client.set(receiver_key, json.dumps(receiver_data))
 
         log_info(f"User {giver_name} gave {amount_gives} dustbunnies to {user_that_receiving_lower}", "give", {
@@ -191,12 +192,10 @@ def give_dustbunnies(user_that_gives, receiving_user, amount_gives):
 
 
 def give_all_dustbunnies(amount):
-    """
-    Give a specified amount of dustbunnies to all users in the system.
+    """Gives specified amount of dustbunnies to all users in the system.
     Only broadcasters can use this function.
 
-    Args:
-        amount (int): The amount of dustbunnies to give to each user
+    @param amount: Amount of dustbunnies to give to each user
     """
     try:
         log_info(f"Giving {amount} dustbunnies to all users", "give", {
@@ -281,13 +280,13 @@ for message in pubsub.listen():
 
                 if not give_to_user or not amount:
                     log_info(f"User {user} provided invalid command format", "give")
-                    send_message_to_redis(f"{message_obj["author"]["mention"]} you need to use the !give <@username> <amount> to give dustbunnies")
+                    send_message_to_redis(f"{message_obj["author"]["mention"]} you need to use the !give <username> <amount> to give dustbunnies")
                     continue
 
                 log_debug(f"Parsed command: give to {give_to_user}, amount {amount}", "give")
             except (IndexError, ValueError) as e:
                 log_info(f"User {user} provided invalid command format", "give", {"error": str(e)})
-                send_message_to_redis(f"{message_obj["author"]["mention"]} you need to use the !give <@username> <amount> to give dustbunnies")
+                send_message_to_redis(f"{message_obj["author"]["mention"]} you need to use the !give <username> <amount> to give dustbunnies")
                 continue
 
             # Check for give all
@@ -303,10 +302,10 @@ for message in pubsub.listen():
                     log_info(f"Non-broadcaster {user} attempted to use give all command", "give")
                     send_message_to_redis(f"{message_obj["author"]["display_name"]} are not allowed to use this command")
             else:
-                # Check if user starts with @ because we need the username
-                if not give_to_user.startswith("@"):
-                    log_info(f"User {user} provided invalid target format", "give")
-                    send_message_to_redis(f"{message_obj["author"]["mention"]} you need to use the @username to give dustbunnies")
+                # Check if user exists
+                if not user_exists(give_to_user):
+                    log_info(f"User {user} tried to give to non-existent user {give_to_user}", "give")
+                    send_message_to_redis(f"{message_obj["author"]["mention"]} the user {give_to_user} doesn't exist")
                     continue
 
                 # Different handling for mods/broadcasters vs regular users

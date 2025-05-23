@@ -5,6 +5,8 @@ import numpy as np
 from module.message_utils import send_system_message_to_redis, send_message_to_redis, register_exit_handler
 from module.message_utils import log_startup, log_info, log_error, log_debug, log_warning
 from module.shared_redis import redis_client, pubsub
+from module.user_utils import normalize_username, user_exists
+from module.redis_user_utils import get_user_data, get_or_create_user
 
 ##########################
 # Configuration
@@ -31,27 +33,21 @@ register_exit_handler()
 ##########################
 
 def steal_dustbunnies(user_that_gets_robbed, receiving_user, amount_stolen):
-    """
-    Transfer dustbunnies from one user to another.
+    """Transfers dustbunnies from one user to another.
 
-    Args:
-        user_that_gets_robbed (str): The username of the user to steal from
-        receiving_user (dict): The user object of the person stealing
-        amount_stolen (int): The amount of dustbunnies to steal
-
-    Returns:
-        int: The actual amount of dustbunnies stolen
+    @param user_that_gets_robbed: Username of the user to steal from
+    @param receiving_user: User object of the person stealing
+    @param amount_stolen: Amount of dustbunnies to steal
+    @return: Actual amount of dustbunnies stolen
     """
     try:
         log_debug(f"Attempting to steal {amount_stolen} dustbunnies from {user_that_gets_robbed}", "steal")
 
-        user_that_gets_robbed_lower = user_that_gets_robbed.lower().replace("@", "")
-        robbed_key = f"user:{user_that_gets_robbed_lower}"
+        user_that_gets_robbed_lower = normalize_username(user_that_gets_robbed)
 
-        if redis_client.exists(robbed_key):
-            robbed_json = redis_client.get(robbed_key)
-            robbed_data = json.loads(robbed_json)
-
+        # Check if the user to rob exists
+        robbed_data = get_user_data(user_that_gets_robbed_lower)
+        if robbed_data:
             if "dustbunnies" not in robbed_data:
                 log_debug(f"Creating dustbunnies object for {user_that_gets_robbed}", "steal")
                 robbed_data["dustbunnies"] = {}
@@ -63,6 +59,9 @@ def steal_dustbunnies(user_that_gets_robbed, receiving_user, amount_stolen):
                 log_info(f"Adjusted steal amount to {amount_stolen} (all available dustbunnies)", "steal")
 
             robbed_data["dustbunnies"]["collected_dustbunnies"] = original_amount - amount_stolen
+
+            # Save updated robbed user data
+            robbed_key = f"user:{user_that_gets_robbed_lower}"
             redis_client.set(robbed_key, json.dumps(robbed_data))
 
             log_info(f"Removed {amount_stolen} dustbunnies from {user_that_gets_robbed}", "steal", {
@@ -77,25 +76,25 @@ def steal_dustbunnies(user_that_gets_robbed, receiving_user, amount_stolen):
             return 0
 
         # Add dustbunnies to the receiver
-        receiver_lower = receiving_user["name"].lower()
-        receiver_key = f"user:{receiver_lower}"
+        receiver_lower = normalize_username(receiving_user["name"])
 
-        if redis_client.exists(receiver_key):
-            receiver_json = redis_client.get(receiver_key)
-            receiver_data = json.loads(receiver_json)
-            log_debug(f"Found existing user {receiving_user['display_name']}", "steal")
-        else:
-            # Create new user if not exists
-            log_info(f"Creating new user account for {receiving_user['display_name']}", "steal")
+        # Get receiver data
+        receiver_data = get_or_create_user(receiver_lower, receiving_user.get("display_name"))
+
+        # Check if receiver data exists
+        if receiver_data is None:
+            log_info(f"User {receiving_user['display_name']} exists on Twitch but not in our database", "steal")
+            # Create a default receiver data structure
             receiver_data = {
-                "name": receiving_user["name"],
-                "display_name": receiving_user["display_name"],
+                "name": receiver_lower,
+                "display_name": receiving_user.get("display_name", receiver_lower),
                 "chat": {"count": 0},
                 "command": {"count": 0},
                 "admin": {"count": 0},
-                "dustbunnies": {},
+                "dustbunnies": {"collected_dustbunnies": 0},
                 "banking": {}
             }
+            log_debug(f"Created temporary user data for {receiving_user['display_name']}", "steal")
 
         if "dustbunnies" not in receiver_data:
             log_debug(f"Creating dustbunnies object for {receiving_user['display_name']}", "steal")
@@ -104,6 +103,9 @@ def steal_dustbunnies(user_that_gets_robbed, receiving_user, amount_stolen):
         # Only update dustbunnies-specific fields
         previous_amount = receiver_data["dustbunnies"].get("collected_dustbunnies", 0)
         receiver_data["dustbunnies"]["collected_dustbunnies"] = previous_amount + amount_stolen
+
+        # Save updated receiver data
+        receiver_key = f"user:{receiver_lower}"
         redis_client.set(receiver_key, json.dumps(receiver_data))
 
         log_info(f"Added {amount_stolen} dustbunnies to {receiving_user['display_name']}", "steal", {
@@ -126,11 +128,9 @@ def steal_dustbunnies(user_that_gets_robbed, receiving_user, amount_stolen):
         return 0
 
 def generate_rnd_amount_to_steal() -> int:
-    """
-    Generate a random amount of dustbunnies to steal based on a weighted probability.
+    """Generates random dustbunnies to steal using weighted probability.
 
-    Returns:
-        int: The amount of dustbunnies to steal
+    @return: Amount of dustbunnies to steal
     """
     try:
         # Pre-configured parameters
@@ -192,14 +192,13 @@ for message in pubsub.listen():
             # Validate target user
             if not user_that_gets_robbed:
                 log_warning(f"User {username} attempted to steal without specifying a target", "steal")
-                send_message_to_redis(f"{message_obj["author"]["mention"]} you need to use the @username to steal dustbunnies")
+                send_message_to_redis(f"{message_obj["author"]["mention"]} you need to specify a username to steal dustbunnies from")
                 continue
 
-            if not user_that_gets_robbed.startswith("@"):
-                log_warning(f"User {username} attempted to steal without using @ prefix", "steal", {
-                    "attempted_target": user_that_gets_robbed
-                })
-                send_message_to_redis(f"{message_obj["author"]["mention"]} you need to use the @username to steal dustbunnies")
+            # Check if user exists
+            if not user_exists(user_that_gets_robbed):
+                log_warning(f"User {username} tried to steal from non-existent user {user_that_gets_robbed}", "steal")
+                send_message_to_redis(f"{message_obj["author"]["mention"]} the user {user_that_gets_robbed} doesn't exist")
                 continue
 
             # Generate random amount to steal

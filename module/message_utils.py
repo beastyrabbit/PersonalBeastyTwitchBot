@@ -10,7 +10,11 @@ from module.shared_redis import redis_client, pubsub
 # Exit Function
 ##########################
 def handle_exit(signum, frame):
-    """Handle graceful exit by unsubscribing from Redis channels."""
+    """Handle graceful exit by unsubscribing from Redis channels.
+
+    @param signum: Signal number
+    @param frame: Current stack frame
+    """
     print("Unsubscribing from all channels before exiting")
     try:
         pubsub.unsubscribe()
@@ -47,7 +51,11 @@ class LogLevel:
 
     @staticmethod
     def get_level(level_name):
-        """Convert a string level name to its numeric value."""
+        """Convert a string level name to its numeric value.
+
+        @param level_name: The level name to convert
+        @return: Numeric log level value
+        """
         if isinstance(level_name, int):
             return level_name
 
@@ -56,7 +64,11 @@ class LogLevel:
 
     @staticmethod
     def get_level_name(level):
-        """Convert a numeric level value to its string name."""
+        """Convert a numeric level value to its string name.
+
+        @param level: The numeric log level
+        @return: String name of the log level
+        """
         if level == LogLevel.DEBUG:
             return "DEBUG"
         elif level == LogLevel.INFO:
@@ -73,7 +85,10 @@ class LogLevel:
             return f"LEVEL_{level}"
 
 def get_caller_info():
-    """Get information about the caller of the logging function."""
+    """Get information about the caller of the logging function.
+
+    @return: Dictionary with filename, line number, and function name
+    """
     frame = inspect.currentframe().f_back.f_back  # Go back two frames to get the caller
     filename = os.path.basename(frame.f_code.co_filename)
     lineno = frame.f_lineno
@@ -87,11 +102,10 @@ def get_caller_info():
 def log_message(level, message, command=None, extra_data=None):
     """Send a log message to Redis.
 
-    Args:
-        level (int or str): The log level (use LogLevel constants or string names)
-        message (str): The message content to send
-        command (str, optional): The command type for the Redis channel. Defaults to "log".
-        extra_data (dict, optional): Additional data to include in the log message.
+    @param level: The log level (use LogLevel constants or string names)
+    @param message: The message content to send
+    @param command: The command type for the Redis channel (optional, defaults to "log")
+    @param extra_data: Additional data to include in the log message (optional)
     """
     if command is None:
         command = "log"
@@ -120,60 +134,54 @@ def log_message(level, message, command=None, extra_data=None):
 def log_debug(message, command=None, extra_data=None):
     """Send a debug log message to Redis.
 
-    Args:
-        message (str): The message content to send
-        command (str, optional): The command type for the Redis channel. Defaults to "log".
-        extra_data (dict, optional): Additional data to include in the log message.
+    @param message: The message content to send
+    @param command: The command type for the Redis channel (optional, defaults to "log")
+    @param extra_data: Additional data to include in the log message (optional)
     """
     log_message("DEBUG", message, command, extra_data)
 
 def log_info(message, command=None, extra_data=None):
     """Send an info log message to Redis.
 
-    Args:
-        message (str): The message content to send
-        command (str, optional): The command type for the Redis channel. Defaults to "log".
-        extra_data (dict, optional): Additional data to include in the log message.
+    @param message: The message content to send
+    @param command: The command type for the Redis channel (optional, defaults to "log")
+    @param extra_data: Additional data to include in the log message (optional)
     """
     log_message("INFO", message, command, extra_data)
 
 def log_warning(message, command=None, extra_data=None):
     """Send a warning log message to Redis.
 
-    Args:
-        message (str): The message content to send
-        command (str, optional): The command type for the Redis channel. Defaults to "log".
-        extra_data (dict, optional): Additional data to include in the log message.
+    @param message: The message content to send
+    @param command: The command type for the Redis channel (optional, defaults to "log")
+    @param extra_data: Additional data to include in the log message (optional)
     """
     log_message("WARNING", message, command, extra_data)
 
 def log_error(message, command=None, extra_data=None):
     """Send an error log message to Redis.
 
-    Args:
-        message (str): The message content to send
-        command (str, optional): The command type for the Redis channel. Defaults to "log".
-        extra_data (dict, optional): Additional data to include in the log message.
+    @param message: The message content to send
+    @param command: The command type for the Redis channel (optional, defaults to "log")
+    @param extra_data: Additional data to include in the log message (optional)
     """
     log_message("ERROR", message, command, extra_data)
 
 def log_critical(message, command=None, extra_data=None):
     """Send a critical log message to Redis.
 
-    Args:
-        message (str): The message content to send
-        command (str, optional): The command type for the Redis channel. Defaults to "log".
-        extra_data (dict, optional): Additional data to include in the log message.
+    @param message: The message content to send
+    @param command: The command type for the Redis channel (optional, defaults to "log")
+    @param extra_data: Additional data to include in the log message (optional)
     """
     log_message("CRITICAL", message, command, extra_data)
 
 def log_startup(message, command=None, extra_data=None):
     """Send a startup log message to Redis.
 
-    Args:
-        message (str): The message content to send
-        command (str, optional): The command type for the Redis channel. Defaults to "log".
-        extra_data (dict, optional): Additional data to include in the log message.
+    @param message: The message content to send
+    @param command: The command type for the Redis channel (optional, defaults to "log")
+    @param extra_data: Additional data to include in the log message (optional)
     """
     log_message("STARTUP", message, command, extra_data)
 
@@ -183,9 +191,8 @@ def log_startup(message, command=None, extra_data=None):
 def send_system_message_to_redis(message, command):
     """Send a system message to Redis.
 
-    Args:
-        message (str): The message content to send
-        command (str, optional): The command type for the Redis channel.
+    @param message: The message content to send
+    @param command: The command type for the Redis channel
     """
     system_message_obj = {
         "type": "system",
@@ -199,14 +206,16 @@ def send_admin_message_to_redis(message, command):
     """Deprecated: Use send_system_message_to_redis instead.
 
     This function is kept for backward compatibility and will be removed in the future.
+
+    @param message: The message content to send
+    @param command: The command type for the Redis channel
     """
     return send_system_message_to_redis(message, command)
 
 def send_message_to_redis(send_message, command=None):
     """Send a chat message to Redis.
 
-    Args:
-        send_message (str): The message to send
-        command (str, optional): The command type. Defaults to None.
+    @param send_message: The message to send
+    @param command: The command type (optional)
     """
     redis_client.publish('twitch.chat.send', send_message)
