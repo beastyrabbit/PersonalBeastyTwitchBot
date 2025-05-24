@@ -13,7 +13,7 @@ from module.message_utils import log_startup, log_info, log_error, log_debug, lo
 # Configuration
 ##########################
 # Set the log level for this command
-LOG_LEVEL = "INFO"  # Use "DEBUG", "INFO", "WARNING", "ERROR", or "CRITICAL"
+LOG_LEVEL = "WARNING"  # Use "DEBUG", "INFO", "WARNING", "ERROR", or "CRITICAL"
 
 ##########################
 # Initialize
