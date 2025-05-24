@@ -52,7 +52,7 @@ def store_value_in_redis_and_get_perc(rnd_number_from_user: int, username: str):
         percentage_off = (distance / target_number) * 100
 
         # Store the attempt in Redis with the distance (username only for logging)
-        user_attempt = json.dumps({"value": rnd_number_from_user, "distance": distance})
+        user_attempt = json.dumps({"value": rnd_number_from_user, "distance": distance, "username": username})
         redis_client.lpush("roomba_user_attempts", user_attempt)
 
         # Get all previous attempts
