@@ -35,6 +35,9 @@ register_exit_handler()
 ##########################
 
 def store_value_in_redis_and_get_perc(rnd_number_from_user: int, username: str):
+    if rnd_number_from_user == 0:
+        log_info("Received zero value from user, skipping processing", "roomba")
+        return 0, 0, 0
     # compare the random number with the stored value in Redis as an array of integers
     # how many users where close to the max value?
     # percentage of rnd_number_from_user compared to max_value_to_roomba
