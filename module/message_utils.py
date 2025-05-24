@@ -37,6 +37,7 @@ class LogLevel:
     WARNING = 30
     ERROR = 40
     CRITICAL = 50
+    IMPORTANT = 55  # Level for important notifications
     STARTUP = 60  # Special level for startup messages
 
     # Map string level names to numeric values
@@ -46,6 +47,7 @@ class LogLevel:
         "WARNING": WARNING,
         "ERROR": ERROR,
         "CRITICAL": CRITICAL,
+        "IMPORTANT": IMPORTANT,
         "STARTUP": STARTUP
     }
 
@@ -79,6 +81,8 @@ class LogLevel:
             return "ERROR"
         elif level == LogLevel.CRITICAL:
             return "CRITICAL"
+        elif level == LogLevel.IMPORTANT:
+            return "IMPORTANT"
         elif level == LogLevel.STARTUP:
             return "STARTUP"
         else:
@@ -126,6 +130,7 @@ def log_message(level, message, command=None, extra_data=None):
         "caller": caller_info
     }
 
+    # Add extra_data if provided
     if extra_data:
         log_message_obj["extra_data"] = extra_data
 
@@ -175,6 +180,15 @@ def log_critical(message, command=None, extra_data=None):
     @param extra_data: Additional data to include in the log message (optional)
     """
     log_message("CRITICAL", message, command, extra_data)
+
+def log_important(message, command=None, extra_data=None):
+    """Send an important notification message to Redis.
+
+    @param message: The message content to send
+    @param command: The command type for the Redis channel (optional, defaults to "log")
+    @param extra_data: Additional data to include in the log message (optional)
+    """
+    log_message("IMPORTANT", message, command, extra_data)
 
 def log_startup(message, command=None, extra_data=None):
     """Send a startup log message to Redis.

@@ -100,16 +100,7 @@ def get_openai_api_key():
         raise
 
 def let_ai_narrate_the_fight(fight_sequence, class_info):
-    """
-    Use OpenAI to generate a narrative description of the fight.
-
-    Args:
-        fight_sequence (list): List of fight events
-        class_info (dict): Information about the fighters' classes
-
-    Returns:
-        str: AI-generated narration of the fight
-    """
+    """Uses OpenAI to generate a narrative description of the fight."""
     try:
         log_info("Generating AI narration for fight", "accept", {
             "sequence_length": len(fight_sequence),

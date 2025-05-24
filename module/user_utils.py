@@ -36,7 +36,15 @@ def get_valid_token():
     token_data = load_token()
     if token_data:
         expires_at = datetime.fromisoformat(token_data['expires_at'])
-        if datetime.now() < expires_at:
+        # Make sure we're comparing datetimes with the same timezone awareness
+        if expires_at.tzinfo is not None:
+            # expires_at is timezone-aware, so make now timezone-aware too
+            now = datetime.now().astimezone()
+        else:
+            # expires_at is naive, so use naive now
+            now = datetime.now()
+
+        if now < expires_at:
             return token_data['access_token']  # Token is valid
         log_warning('Twitch token expired, please refresh it', "user_utils")
     return None  # Token expired or missing

@@ -3,12 +3,16 @@ import pyvban
 import time
 import threading
 import logging
+import json
 from module.shared_redis import redis_client_env
 from module.message_utils import send_system_message_to_redis, send_admin_message_to_redis
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
+
+# Set obsws_python logger to WARNING level to prevent logging sensitive information
+logging.getLogger('obsws_python').setLevel(logging.WARNING)
 
 ##########################
 # OBS Connection
@@ -111,3 +115,45 @@ def get_obs_client():
 
         obs_connection_status["is_connecting"] = False
         return None
+
+def broadcast_custom_event(event_type, data):
+    client = get_obs_client()
+    if client is None:
+        logger.warning(f"Failed to send custom event to OBS: No connection")
+        return False
+
+    try:
+        event_data = {
+            "origin": "twitchat",
+            "type": event_type,
+            "data": data
+        }
+
+        # Use the broadcast_custom_event method directly if available
+        if hasattr(client, 'broadcast_custom_event'):
+            client.broadcast_custom_event({"eventData": event_data})
+        # Try using send_custom_event if available
+        elif hasattr(client, 'send_custom_event'):
+            client.send_custom_event({"eventData": event_data})
+        # Try using a more generic approach with events
+        elif hasattr(client, 'trigger_custom_event'):
+            client.trigger_custom_event("BroadcastCustomEvent", {"eventData": event_data})
+        # Try using a more generic approach with events
+        elif hasattr(client, 'trigger_event'):
+            client.trigger_event("BroadcastCustomEvent", {"eventData": event_data})
+        # Try using a more generic approach with events
+        elif hasattr(client, 'send_request'):
+            client.send_request("BroadcastCustomEvent", {"eventData": event_data})
+        # As a last resort, try to use the call method (which is causing the error)
+        else:
+            logger.warning("Could not find appropriate method to broadcast custom event. Falling back to call method.")
+            client.call(request_type="BroadcastCustomEvent", request_data={"eventData": event_data})
+
+        logger.info(f"Sent custom event to OBS: {event_type}")
+        return True
+    except Exception as e:
+        logger.error(f"Error sending custom event to OBS: {e}")
+        return False
+
+def send_custom_message(message_data):
+    return broadcast_custom_event("CUSTOM_CHAT_MESSAGE", message_data)

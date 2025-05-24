@@ -4,19 +4,12 @@ import sys
 import time
 from datetime import datetime
 
-import redis
+from module.shared_redis import redis_client, pubsub
+from module.shared_obs import send_custom_message
 
 ##########################
 # Configuration
 ##########################
-REDIS_HOST = '192.168.50.115'
-REDIS_PORT = 6379
-REDIS_DB = 0
-SYSTEM_COMMANDS_KEY = 'twitch:messages:system'  # Sorted set for all system commands
-ADMIN_COMMANDS_KEY = 'twitch:messages:admin'  # Legacy key for backward compatibility
-HELPER_COMMANDS_KEY = 'twitch:messages:helper'  # Sorted set for all helper commands
-LOG_MESSAGES_KEY = 'twitch:messages:log'  # Sorted set for all log messages
-MAX_STORED_COMMANDS = 5000  # Limit to prevent unbounded growth
 
 # Log level configuration
 DEFAULT_LOG_LEVEL = "INFO"
@@ -26,7 +19,101 @@ LOG_LEVELS = {
     'WARNING': 30,
     'ERROR': 40,
     'CRITICAL': 50,
+    'IMPORTANT': 55,  # New level for important notifications
     'STARTUP': 60
+}
+
+# Custom log styles configuration
+# This allows customizing the appearance and behavior of each log level
+LOG_STYLES = {
+    'DEBUG': {
+        'enabled': True,  # Whether this log level is enabled
+        'style': 'message',  # Style: message, error, highlight
+        'color': '#808080',  # Color for the message
+        'user': {
+            'name': 'Debug',
+            'color': '#808080'
+        },
+        'icon': 'help',  # Icon to display with the message
+        'format': '[DEBUG] {filename}:{lineno} - {content}',  # Message format
+        'quote': 'Debug Information'  # Optional quote displayed in a dedicated holder
+    },
+    'INFO': {
+        'enabled': True,
+        'style': 'message',
+        'color': '#1E90FF',
+        'user': {
+            'name': 'Info',
+            'color': '#1E90FF'
+        },
+        'icon': 'info',
+        'format': '[INFO] {filename}:{lineno} - {content}',
+        'canClose': False,
+    },
+    'WARNING': {
+        'enabled': True,
+        'style': 'message',
+        'color': '#FFA500',
+        'highlightColor': '#FFF3E0',  # Lighter orange background
+        'user': {
+            'name': 'warning',
+            'color': '#FFA500'
+        },
+        'icon': 'magnet',
+        'format': '[WARNING] {filename}:{lineno} - {content}',
+        'canClose': False
+    },
+    'ERROR': {
+        'enabled': True,
+        'style': 'error',
+        'color': '#FF4500',
+        'user': {
+            'name': 'Error',
+            'color': '#FF4500'
+        },
+        'icon': 'read',
+        'format': '[ERROR] {filename}:{lineno} - {content}',
+        'canClose': False
+    },
+    'CRITICAL': {
+        'enabled': True,
+        'style': 'error',
+        'color': '#FF0000',
+        'user': {
+            'name': 'Critical',
+            'color': '#FF0000'
+        },
+        'icon': 'emergency',
+        'format': '[CRITICAL] {filename}:{lineno} - {content}',
+        'canClose': False
+    },
+    'IMPORTANT': {
+        'enabled': True,
+        'style': 'highlight',
+        'color': '#9932CC',  # Purple color for important notifications
+        'highlightColor': '#F3E5F5',  # Light purple background
+        'user': {
+            'name': 'Important',
+            'color': '#9932CC'
+        },
+        'icon': 'api',  # Notification icon
+        'format': '[IMPORTANT] {filename}:{lineno} - {content}',
+        'canClose': False,
+        'todayFirst': True  # Show in "greet them" section
+    },
+    'STARTUP': {
+        'enabled': True,
+        'style': 'message',
+        'color': '#32CD32',
+        'highlightColor': '#E8F5E9',  # Light green background
+        'user': {
+            'name': 'Startup',
+            'color': "#32CD32"
+        },
+        'icon': 'stars',
+        'format': '[STARTUP] {filename}:{lineno} - {content}',
+        'canClose': False,
+    }
 }
 
 # Get log level from environment or use default
@@ -45,11 +132,157 @@ print(f"System logger running with log level: {SYSTEM_LOG_LEVEL_NAME} ({SYSTEM_L
 ##########################
 # Initialize Redis
 ##########################
-redis_client = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB)
-pubsub = redis_client.pubsub()
-
 # Subscribe to system command pattern (and admin for backward compatibility)
 pubsub.psubscribe('system.*', 'admin.*')
+
+##########################
+# Helper Functions
+##########################
+def format_log_message(level_name, content, caller=None, **kwargs):
+    """
+    Format a log message according to the configured style for the given level.
+
+    Args:
+        level_name (str): The name of the log level (DEBUG, INFO, etc.)
+        content (str): The content of the log message
+        caller (dict, optional): Information about the caller (filename, lineno)
+        **kwargs: Additional formatting parameters
+
+    Returns:
+        dict: A formatted message object ready to be sent
+    """
+    original_level = level_name.upper()
+    if original_level not in LOG_STYLES:
+        # Throw an error for unknown log types
+        error_msg = f"Unsupported log level: {original_level}"
+        print(error_msg)
+        # Set it to ERROR type and include the original level in the message
+        level_name = 'ERROR'
+        content = f"Unsupported log type '{original_level}' was tried to send: {content}"
+    else:
+        level_name = original_level
+
+    style = LOG_STYLES[level_name]
+
+    # Create caller info if not provided
+    if caller is None:
+        try:
+            import inspect
+            frame = inspect.currentframe().f_back.f_back  # Go back two frames to get the caller
+            if frame is not None and hasattr(frame, 'f_code'):
+                filename = frame.f_code.co_filename
+                lineno = frame.f_lineno
+                caller = {
+                    'filename': filename.split('/')[-1],  # Just the filename, not the full path
+                    'lineno': lineno
+                }
+            else:
+                # If frame is None or doesn't have f_code, use default values
+                caller = {
+                    'filename': 'unknown',
+                    'lineno': 0
+                }
+        except Exception as e:
+            print(f"Error getting caller info: {e}")
+            # Use default values if an error occurs
+            caller = {
+                'filename': 'unknown',
+                'lineno': 0
+            }
+
+    # Format the message content
+    format_str = style.get('format', '[{level_name}] {filename}:{lineno} - {content}')
+    formatted_content = format_str.format(
+        level_name=level_name,
+        filename=caller.get('filename', 'unknown'),
+        lineno=caller.get('lineno', '?'),
+        content=content,
+        **kwargs
+    )
+
+    # Create the message object
+    message_obj = {
+        'content': formatted_content,
+        'raw_content': content,  # Store the original content
+        'level': LOG_LEVELS.get(level_name, 0),
+        'level_name': level_name,
+        'timestamp': datetime.now().isoformat(),
+        'caller': caller,
+        'type': 'system',
+        'source': 'system_logger',
+        'metadata': {},
+        'event_data': {}
+    }
+
+    # Add styling information
+    message_obj['style'] = style.get('style', 'message')
+    message_obj['color'] = style.get('color', '#FFFFFF')
+
+    if 'highlightColor' in style:
+        message_obj['highlightColor'] = style['highlightColor']
+
+    if 'icon' in style:
+        message_obj['icon'] = style['icon']
+
+    if 'canClose' in style:
+        message_obj['canClose'] = style['canClose']
+
+    # Add user information
+    if 'user' in style:
+        message_obj['user'] = style['user']
+
+    # Add any additional kwargs
+    for key, value in kwargs.items():
+        if key not in message_obj:
+            message_obj[key] = value
+
+    return message_obj
+
+def send_log_message(level_name, content, caller=None, **kwargs):
+    """
+    Send a log message with the given level.
+
+    Args:
+        level_name (str): The name of the log level (DEBUG, INFO, etc.)
+        content (str): The content of the log message
+        caller (dict, optional): Information about the caller (filename, lineno)
+        **kwargs: Additional formatting parameters
+
+    Returns:
+        bool: True if the message was sent, False otherwise
+    """
+    level_name = level_name.upper()
+
+    # Check if this log level is enabled
+    if level_name in LOG_STYLES and not LOG_STYLES[level_name].get('enabled', True):
+        return False
+
+    # Check if the log level exists
+    if level_name not in LOG_LEVELS:
+        # This should not happen as format_log_message should have caught it,
+        # but just in case, handle it here too
+        error_msg = f"Unsupported log level: {level_name}"
+        print(error_msg)
+        # Set it to ERROR type and include the original level in the message
+        content = f"Unsupported log type '{level_name}' was tried to send: {content}"
+        level_name = 'ERROR'
+        level = LOG_LEVELS['ERROR']
+    else:
+        level = LOG_LEVELS[level_name]
+
+    # Check if the log level is high enough
+    if level < SYSTEM_LOG_LEVEL and level_name != 'STARTUP':
+        return False
+
+    # Format the message
+    message_obj = format_log_message(level_name, content, caller, **kwargs)
+
+    # Send the message to Redis
+    channel = f"system.log.{level_name.lower()}"
+    redis_client.publish(channel, json.dumps(message_obj))
+
+    return True
+
 
 ##########################
 # Exit Function
@@ -81,6 +314,33 @@ for message in pubsub.listen():
             is_log_message = False
             if command_type == 'system' and len(channel_parts) > 2 and channel_parts[1] == 'log':
                 is_log_message = True
+                # Get the log level name
+                level_name = channel_parts[2].upper() if len(channel_parts) > 2 else 'UNKNOWN'
+
+                # Extract the actual log level from the message object
+                message_level_name = message_obj.get('level_name', 'UNKNOWN')
+
+                # Check if this is a known log level in the message
+                if message_level_name not in LOG_STYLES:
+                    # Handle unknown log type
+                    error_msg = f"Unsupported log level in message: {message_level_name}"
+                    print(error_msg)
+                    # Create an error message
+                    error_content = f"Unsupported log type '{message_level_name}' was received"
+                    # Create a new error message and publish it
+                    error_obj = format_log_message('ERROR', error_content)
+                    redis_client.publish('system.log.error', json.dumps(error_obj))
+                    # Skip processing this message
+                    continue
+
+                # Use the level from the message object instead of the channel
+                level_name = message_level_name
+
+                # Check if this log level is enabled in the configuration
+                if not LOG_STYLES[level_name].get('enabled', True):
+                    # Skip messages for disabled log levels
+                    continue
+
                 # Check if the log level is high enough to process
                 log_level = message_obj.get('level', 0)
                 if log_level < SYSTEM_LOG_LEVEL and log_level != LOG_LEVELS.get('STARTUP', 60):
@@ -90,6 +350,7 @@ for message in pubsub.listen():
                 # For log messages, use the command as the command_name
                 if len(channel_parts) > 2:
                     command_name = channel_parts[2]  # system.log.commandname
+
 
             # Create a standard message object if one doesn't exist
             if isinstance(message_obj, str) or not isinstance(message_obj, dict):
@@ -120,95 +381,6 @@ for message in pubsub.listen():
             # Keep admin_command for backward compatibility
             message_obj['event_data']['admin_command'] = command_name
 
-            # Unified user JSON logging for system commands
-            author = message_obj.get('author', {})
-            username = author.get('name') or author.get('display_name')
-            if username:
-                username_lower = username.lower()
-                user_key = f"user:{username_lower}"
-                user_data = redis_client.get(user_key)
-                if user_data:
-                    user_json = json.loads(user_data)
-                else:
-                    user_json = {
-                        "name": username,
-                        "display_name": author.get('display_name', username),
-                        "log": {"chat": 0, "command": 0, "admin": 0, "system": 0, "lurk": 0, "unlurk": 0},
-                        "dustbunnies": {},
-                        "banking": {}
-                    }
-                if "log" not in user_json:
-                    user_json["log"] = {"chat": 0, "command": 0, "admin": 0, "system": 0, "lurk": 0, "unlurk": 0}
-
-                # Increment the appropriate counter based on message type
-                if command_type == 'system':
-                    user_json["log"]["system"] = user_json["log"].get("system", 0) + 1
-                    user_json["log"]["last_system_command"] = command_name
-                else:  # 'admin' for backward compatibility
-                    user_json["log"]["admin"] = user_json["log"].get("admin", 0) + 1
-                    user_json["log"]["last_admin_command"] = command_name
-
-                user_json["log"]["last_timestamp"] = message_obj["timestamp"]
-                redis_client.set(user_key, json.dumps(user_json))
-
-            # Add a numeric timestamp for Redis sorting
-            current_time = time.time()
-            message_obj['_score'] = current_time
-
-            # Convert to JSON for storage
-            message_json = json.dumps(message_obj)
-
-            # Store in appropriate commands sorted set
-            if is_log_message:
-                # Store log messages in the log messages set
-                redis_client.zadd(LOG_MESSAGES_KEY, {message_json: current_time})
-                # Also store in level-specific set
-                level_name = message_obj.get('level_name', 'UNKNOWN')
-                level_key = f"twitch:log:{level_name.lower()}"
-                redis_client.zadd(level_key, {message_json: current_time})
-            elif message_obj['type'] == 'helper':
-                redis_client.zadd(HELPER_COMMANDS_KEY, {message_json: current_time})
-            elif message_obj['type'] == 'system':
-                redis_client.zadd(SYSTEM_COMMANDS_KEY, {message_json: current_time})
-            else:  # 'admin' for backward compatibility
-                redis_client.zadd(ADMIN_COMMANDS_KEY, {message_json: current_time})
-
-            # Store in all messages set too
-            redis_client.zadd('twitch:messages:all', {message_json: current_time})
-
-            # Store in command-specific set for easy retrieval
-            if is_log_message:
-                # For log messages, use a different key pattern
-                command_key = f"twitch:log:{command_name}"
-            elif command_type == 'system':
-                command_key = f"twitch:system:{command_name}"
-            else:  # 'admin' for backward compatibility
-                command_key = f"twitch:admin:{command_name}"
-
-            redis_client.zadd(command_key, {message_json: current_time})
-
-            # Prune if exceeding max count
-            if is_log_message:
-                current_count = redis_client.zcard(LOG_MESSAGES_KEY)
-                if current_count > MAX_STORED_COMMANDS:
-                    # Remove oldest log messages (lowest scores)
-                    redis_client.zremrangebyrank(LOG_MESSAGES_KEY,
-                                                0,
-                                                current_count - MAX_STORED_COMMANDS - 1)
-            elif command_type == 'system':
-                current_count = redis_client.zcard(SYSTEM_COMMANDS_KEY)
-                if current_count > MAX_STORED_COMMANDS:
-                    # Remove oldest commands (lowest scores)
-                    redis_client.zremrangebyrank(SYSTEM_COMMANDS_KEY,
-                                                0,
-                                                current_count - MAX_STORED_COMMANDS - 1)
-            else:  # 'admin' for backward compatibility
-                current_count = redis_client.zcard(ADMIN_COMMANDS_KEY)
-                if current_count > MAX_STORED_COMMANDS:
-                    # Remove oldest commands (lowest scores)
-                    redis_client.zremrangebyrank(ADMIN_COMMANDS_KEY,
-                                                0,
-                                                current_count - MAX_STORED_COMMANDS - 1)
 
             # Print appropriate message based on message type
             if is_log_message:
@@ -216,7 +388,74 @@ for message in pubsub.listen():
                 caller = message_obj.get('caller', {})
                 filename = caller.get('filename', 'unknown')
                 lineno = caller.get('lineno', '?')
-                print(f"[{level_name}] {filename}:{lineno} - {message_obj.get('content', 'No content')}")
+
+                # Apply styling from LOG_STYLES
+                style = LOG_STYLES.get(level_name, LOG_STYLES['INFO'])
+
+                # Apply styling to message_obj if not already present
+                if 'style' not in message_obj:
+                    message_obj['style'] = style.get('style', 'message')
+
+                if 'color' not in message_obj:
+                    message_obj['color'] = style.get('color', '#FFFFFF')
+
+                if 'highlightColor' not in message_obj and 'highlightColor' in style:
+                    message_obj['highlightColor'] = style['highlightColor']
+
+                if 'icon' not in message_obj and 'icon' in style:
+                    message_obj['icon'] = style['icon']
+
+                if 'canClose' not in message_obj and 'canClose' in style:
+                    message_obj['canClose'] = style['canClose']
+
+                if 'user' not in message_obj and 'user' in style:
+                    message_obj['user'] = style['user']
+
+                if 'quote' not in message_obj and 'quote' in style:
+                    message_obj['quote'] = style['quote']
+
+                if 'todayFirst' not in message_obj and 'todayFirst' in style:
+                    message_obj['todayFirst'] = style['todayFirst']
+
+                # Extract styling from extra_data if present
+                if 'extra_data' in message_obj:
+                    extra_data = message_obj.pop('extra_data')
+                    for key, value in extra_data.items():
+                        if key not in message_obj:
+                            message_obj[key] = value
+
+                # Build style_info string for console output
+                style_info = f"style={message_obj.get('style', 'message')}"
+
+                if 'color' in message_obj:
+                    style_info += f", color={message_obj['color']}"
+
+                if 'icon' in message_obj:
+                    style_info += f", icon={message_obj['icon']}"
+
+                print(f"[{level_name}] {filename}:{lineno} - {message_obj.get('content', 'No content')} ({style_info})")
+
+                # Send log message to OBS
+                try:
+                    # Create a copy of the message object for OBS
+                    obs_message = message_obj.copy()
+
+                    # Format the message for OBS if needed
+                    if 'message' not in obs_message:
+                        obs_message['message'] = obs_message.get('content', 'No content')
+
+                    # Ensure all required fields for Twitchat are present
+                    if 'style' not in obs_message:
+                        obs_message['style'] = 'message'
+
+                    # Add col parameter for positioning if not present
+                    if 'col' not in obs_message:
+                        obs_message['col'] = 0  # Default to first column
+
+                    # Send to OBS
+                    send_custom_message(obs_message)
+                except Exception as e:
+                    print(f"Error sending log message to OBS: {e}")
             else:
                 print(f"Stored {command_type} command: {command_name} - {message_obj.get('content', 'No content')}")
 

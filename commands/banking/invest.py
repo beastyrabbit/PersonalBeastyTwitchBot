@@ -277,12 +277,7 @@ for message in pubsub.listen():
                     send_message_to_redis(f"{message_obj['author']['mention']} you need to specify an amount to invest")
                     continue
 
-                # First collect any pending interest
-                log_debug(f"Collecting interest for {user} before investing", "invest")
-                redis_client.publish(f'twitch.command.collect', json.dumps(message_obj))
-                time.sleep(1)
-
-                # Then invest
+                # Invest
                 log_info(f"User {user} investing {invest_amount} for self", "invest")
                 if invest_money(message_obj["author"], invest_amount):
                     send_message_to_redis(f"{message_obj['author']['mention']} you have invested {invest_amount} points")
