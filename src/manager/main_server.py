@@ -245,3 +245,22 @@ for message in pubsub.listen():
                 for service in services_managed:
                     execute_command(command_name=service, action=action)
                 continue
+
+        # Handle manual live/offline setting
+        if "set live" in message_obj["content"]:
+            print("Manual override: Setting system to LIVE")
+            is_live = True
+            # Start all services
+            for service in services_managed:
+                execute_command(command_name=service, action="start")
+            send_system_message_to_redis('Manual override: System is now LIVE - All services started', command="system")
+            continue
+
+        if "set offline" in message_obj["content"]:
+            print("Manual override: Setting system to OFFLINE")
+            is_live = False
+            # Stop all services
+            for service in services_managed:
+                execute_command(command_name=service, action="stop")
+            send_system_message_to_redis('Manual override: System is now OFFLINE - All services stopped', command="system")
+            continue
