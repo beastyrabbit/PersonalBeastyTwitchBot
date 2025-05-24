@@ -90,6 +90,14 @@ def cleanup_subprocesses():
             except Exception as e:
                 print(f"Error terminating subprocess '{command_name}': {str(e)}")
 
+        # Remove from running processes dictionary regardless of termination success
+        # This ensures we don't keep references to terminated processes
+        if command_name in running_processes:
+            del running_processes[command_name]
+
+    # Log the cleanup completion
+    log_info(f"Cleaned up all processes. Running processes count: {len(running_processes)}", command="system")
+
 def execute_command(command_name, action):
     """
     Finds and manages a Python file from the 'commands' subfolder (and subfolders).
@@ -238,6 +246,12 @@ for message in pubsub.listen():
                 subprocess.run(["uv", "sync"], check=True)
             except subprocess.CalledProcessError as e:
                 print(f"uv sync failed: {e}")
+
+            # Clean up all running processes before restarting the manager service
+            log_info('Cleaning up all processes before restart due to git pull', command="system")
+            cleanup_subprocesses()
+
+            # Now restart the manager service
             restart_manager_service()
         if any(cmd in message_obj["content"] for cmd in ["start", "stop", "restart"]):
             # send a message to the OS to start, stop or restart a service
@@ -247,6 +261,11 @@ for message in pubsub.listen():
                 execute_command(command_name=service, action=action)
                 continue
             if service == "manager":
+                # Clean up all running processes before restarting the manager service
+                log_info('Cleaning up all processes before restart due to manager restart command', command="system")
+                cleanup_subprocesses()
+
+                # Now restart the manager service
                 restart_manager_service()
                 continue
             if service == "all":
