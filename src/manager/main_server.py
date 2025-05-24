@@ -82,6 +82,23 @@ def restart_manager_service():
         print(f"Failed to issue restart command for service '{manager_service_name}'. Error: {e}")
 
 
+def start_all_services():
+    """
+    Start all services with system_logger first, then the rest.
+    This ensures that logging is available before other services start.
+    """
+    log_info("Starting system_logger first", command="system")
+    # Start system_logger first
+    execute_command(command_name="system_logger", action="start")
+
+    # Then start all other services
+    for service in services_managed:
+        if service != "system_logger":
+            execute_command(command_name=service, action="start")
+
+    log_info("All services started", command="system")
+
+
 def initialize_services():
     """
     Initialize systemd services for all commands in services_managed.
@@ -168,8 +185,7 @@ initialize_services()
 
 # Start all services since we're assuming the system is live on startup
 log_info('Starting all services on startup', command="system")
-for service in services_managed:
-    execute_command(command_name=service, action="start")
+start_all_services()
 
 # Main loop with error handling for Redis operations
 try:
@@ -182,8 +198,7 @@ try:
                 is_live = True
                 # Start all services if they're not already running
                 log_info('Starting all services due to system.user.live message', command="system")
-                for service in services_managed:
-                    execute_command(command_name=service, action="start")
+                start_all_services()
                 log_info('System is now LIVE - All services started', command="system")
                 continue
 
@@ -257,8 +272,13 @@ try:
                     continue
 
                 if service == "all":
-                    for service in services_managed:
-                        execute_command(command_name=service, action=action)
+                    if action == "start":
+                        # Use the helper function to ensure system_logger starts first
+                        start_all_services()
+                    else:
+                        # For stop and restart, order doesn't matter
+                        for service in services_managed:
+                            execute_command(command_name=service, action=action)
                     continue
 
             # Handle manual live/offline setting
@@ -267,8 +287,7 @@ try:
                 is_live = True
                 # Start all services
                 log_info('Starting all services due to manual "set live" command', command="system")
-                for service in services_managed:
-                    execute_command(command_name=service, action="start")
+                start_all_services()
                 log_info('Manual override: System is now LIVE - All services started', command="system")
                 continue
 
