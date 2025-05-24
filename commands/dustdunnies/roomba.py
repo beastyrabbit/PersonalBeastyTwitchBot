@@ -33,6 +33,64 @@ register_exit_handler()
 ##########################
 # Helper Functions
 ##########################
+
+def store_value_in_redis_and_get_perc(rnd_number_from_user: int, username: str):
+    # compare the random number with the stored value in Redis as an array of integers
+    # how many users where close to the max value?
+    # percentage of rnd_number_from_user compared to max_value_to_roomba
+    try:
+        global max_value_to_roomba
+        if rnd_number_from_user > max_value_to_roomba:
+            log_warning(f"Random number {rnd_number_from_user} exceeds max value {max_value_to_roomba}", "roomba")
+            return 0, 0, 0
+
+        # Get the target number (this could be the max value or another target)
+        target_number = max_value_to_roomba
+
+        # Calculate how far off the user is from the target
+        distance = abs(target_number - rnd_number_from_user)
+        percentage_off = (distance / target_number) * 100
+
+        # Store the attempt in Redis with the distance (username only for logging)
+        user_attempt = json.dumps({"value": rnd_number_from_user, "distance": distance})
+        redis_client.lpush("roomba_user_attempts", user_attempt)
+
+        # Get all previous attempts
+        all_attempts = redis_client.lrange("roomba_user_attempts", 0, -1)
+        better_users = 0
+
+        # Count how many users got closer to max without hitting max
+        current_distance = distance
+        for attempt_json in all_attempts:
+            attempt = json.loads(attempt_json)
+            # Skip the current attempt
+            if attempt["value"] == rnd_number_from_user and attempt["distance"] == current_distance:
+                continue
+            # Count attempts that got closer
+            if attempt["distance"] < current_distance:
+                better_users += 1
+
+        # Calculate percentage of max value
+        percentage = (rnd_number_from_user / max_value_to_roomba) * 100
+
+        log_info(f"Value {rnd_number_from_user} is {percentage:.2f}% of max value {max_value_to_roomba}", "roomba", {
+            "random_value": rnd_number_from_user,
+            "percentage": percentage,
+            "percentage_off": percentage_off,
+            "better_users": better_users
+        })
+
+        return percentage, percentage_off, better_users
+    except Exception as e:
+        error_msg = f"Error in store_value_in_redis_and_get_perc: {e}"
+        log_error(error_msg, "roomba", {
+            "error": str(e),
+            "value": rnd_number_from_user
+        })
+        return 0, 0, 0
+
+
+
 def do_the_cleaning_command(user_obj, username) -> int:
     """Checks if user can use roomba and generates random dustbunnies.
 
@@ -155,7 +213,11 @@ for message in pubsub.listen():
     if message["type"] == "message":
         try:
             message_obj = json.loads(message['data'].decode('utf-8'))
-            command = message_obj.get('command')
+            command = message_obj["event_data"]["command"].lower()
+            if command == "clean":
+                clean_flag = True
+            else:
+                clean_flag = False
             content = message_obj.get('content')
             log_info(f"Received command: {command}", "roomba", {"content": content})
 
@@ -165,14 +227,23 @@ for message in pubsub.listen():
             random_value = do_the_cleaning_command(message_obj["author"], username)
             handle_user_data(message_obj["author"], random_value)
             username = message_obj["author"]["mention"]
+
+            # Get additional metrics about user performance
+            percentage, percentage_off, better_users = store_value_in_redis_and_get_perc(random_value, username)
+
             if max_value_to_roomba == random_value:
                 # Congratulate the user for hitting the max value
                 redis_client.set("roomba_max_hit_value", max_value_to_roomba * 10)
                 max_value_to_roomba = int(redis_client.get("roomba_max_hit_value").decode('utf-8'))
-                log_info(f"User {username} hit the max value of {random_value}", "roomba", {
+
+                # Reset the array of user attempts when max is hit
+                redis_client.delete("roomba_user_attempts")
+                log_info(f"Max value of {random_value} was hit - array reset and new max is {max_value_to_roomba}", "roomba", {
                     "max_value": random_value,
-                    "new_max_value": max_value_to_roomba
+                    "new_max_value": max_value_to_roomba,
+                    "array_reset": True
                 })
+
                 send_message_to_redis(f'{username} hit the max value! 🐰🐻')
                 send_message_to_redis(f'@Beastyrabbit Max Clean Value just was increased by {username} and is now {max_value_to_roomba}.! 🐰🐻')
 
@@ -235,8 +306,13 @@ for message in pubsub.listen():
                 send_message_to_redis(f'{username} cleaned up {random_value} Dustbunnies 🐰🐻! Cash Now! 💰')
 
             elif random_value > 0:
-                # Username cleaned up random_value messages...
-                send_message_to_redis(f'{username} cleaned up {random_value} Dustbunnies 🐰!')
+                # Focus on percentage and better users count without emphasizing username
+                performance_msg = ""
+                if clean_flag == True:
+                    performance_msg = f" {percentage_off:.1f}% off"
+                    if better_users > 0:
+                        performance_msg += f" ({better_users} closer)"
+                send_message_to_redis(f'{username} got {random_value} 🐰{performance_msg}')
         except Exception as e:
             error_msg = f"Error processing roomba command: {e}"
             # Log the error with detailed information

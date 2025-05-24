@@ -5,6 +5,8 @@ import signal
 import subprocess
 import sys
 import os
+import time
+
 from git import Repo
 import redis
 from module.message_utils import send_admin_message_to_redis, send_message_to_redis
@@ -90,6 +92,7 @@ def start_all_services():
     log_info("Starting system_logger first", command="system")
     # Start system_logger first
     execute_command(command_name="system_logger", action="start")
+    time.sleep(1)
 
     # Then start all other services
     for service in services_managed:

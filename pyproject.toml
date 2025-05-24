@@ -9,6 +9,7 @@ dependencies = [
     "gitpython>=3.1.44",
     "numpy>=2.2.5",
     "obsws-python>=1.7.1",
+    "ollama>=0.4.8",
     "openai>=1.77.0",
     "pillow>=11.2.1",
     "pygobject-stubs==2.13.0",
