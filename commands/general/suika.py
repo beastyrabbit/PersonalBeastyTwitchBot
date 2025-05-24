@@ -10,7 +10,7 @@ from module.shared_redis import redis_client, pubsub
 # Configuration
 ##########################
 # Set the log level for this command
-LOG_LEVEL = "INFO"  # Use "DEBUG", "INFO", "WARNING", "ERROR", or "CRITICAL"
+LOG_LEVEL = "WARNING"  # Use "DEBUG", "INFO", "WARNING", "ERROR", or "CRITICAL"
 
 ##########################
 # Initialize
