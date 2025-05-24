@@ -20,7 +20,7 @@ from module.shared_redis import redis_client
 # Configuration
 ##########################
 # Set the log level for this command
-LOG_LEVEL = "DEBUG"  # Use lowest level to ensure all messages are processed
+LOG_LEVEL = "WARNING"  # Changed from DEBUG to WARNING to test log level filtering
 
 ##########################
 # Initialize

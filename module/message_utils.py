@@ -120,6 +120,14 @@ def log_message(level, message, command=None, extra_data=None):
 
     caller_info = get_caller_info()
 
+    # Check if the calling file has a LOG_LEVEL defined and respect it
+    caller_module = inspect.getmodule(inspect.currentframe().f_back.f_back)
+    if caller_module and hasattr(caller_module, 'LOG_LEVEL'):
+        caller_log_level = LogLevel.get_level(caller_module.LOG_LEVEL)
+        # Skip logging if the message level is lower than the caller's log level
+        if numeric_level < caller_log_level:
+            return
+
     log_message_obj = {
         "type": "system",
         "source": "system",

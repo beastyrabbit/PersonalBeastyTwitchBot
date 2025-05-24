@@ -7,6 +7,7 @@ from datetime import datetime
 import redis
 
 from module.message_utils import log_startup, log_info, log_error, log_debug
+from module.redis_user_utils import redis_client
 
 ##########################
 # Configuration
@@ -14,16 +15,13 @@ from module.message_utils import log_startup, log_info, log_error, log_debug
 # Set the log level for this command
 LOG_LEVEL = "WARNING"  # Use "DEBUG", "INFO", "WARNING", "ERROR", or "CRITICAL"
 
-REDIS_HOST = '192.168.50.115'
-REDIS_PORT = 6379
-REDIS_DB = 0
 CHAT_MESSAGES_KEY = 'twitch:messages:all'  # Sorted set for time-based storage
 MAX_STORED_MESSAGES = 10000  # Limit to prevent unbounded growth
 
 ##########################
 # Initialize Redis
 ##########################
-redis_client = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB)
+
 pubsub = redis_client.pubsub()
 pubsub.subscribe('twitch.chat.received')
 
