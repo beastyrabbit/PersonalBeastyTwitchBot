@@ -41,9 +41,17 @@ is_live = True  # Assume live on startup
 # Exit Function
 ##########################
 def handle_exit(signum, frame):
-    print("Unsubscribing from all channels bofore exiting")
-    pubsub.unsubscribe()
+    print("Unsubscribing from all channels before exiting")
+    try:
+        # Try to unsubscribe gracefully, but don't fail if it doesn't work
+        pubsub.unsubscribe()
+        print("Successfully unsubscribed from Redis channels")
+    except Exception as e:
+        print(f"Error unsubscribing from Redis channels: {e}")
+    
+    # Always clean up subprocesses
     cleanup_subprocesses()
+    
     # Place any cleanup code here
     sys.exit(0)  # Exit gracefully
 
@@ -210,101 +218,110 @@ log_info('Starting all services on startup', command="system")
 for service in services_managed:
     execute_command(command_name=service, action="start")
 
-for message in pubsub.listen():
-    if message["type"] == "message":
-        # Handle system.user.live and system.user.offline messages
-        if message["channel"].decode('utf-8') == 'system.user.live':
-            print("Received system.user.live message - Starting all services")
-            is_live = True
-            # Start all services if they're not already running
-            log_info('Starting all services due to system.user.live message', command="system")
-            for service in services_managed:
-                execute_command(command_name=service, action="start")
-            log_info('System is now LIVE - All services started', command="system")
-            continue
-
-        if message["channel"].decode('utf-8') == 'system.user.offline':
-            print("Received system.user.offline message - Shutting down all services")
-            is_live = False
-            # Stop all services
-            for service in services_managed:
-                execute_command(command_name=service, action="stop")
-            log_info('System is now OFFLINE - All services stopped', command="system")
-            continue
-
-        # Handle regular command messages
-        message_obj = json.loads(message['data'].decode('utf-8'))
-        print(f"Chat Command: {message_obj.get('command')} and Message: {message_obj.get('content')}")
-        if not message_obj["author"]["broadcaster"]:
-            send_message_to_redis('🚨 Only the broadcaster can use this command 🚨', command="main_server")
-            continue
-            # sub commands: git pull, start a service, stop a service, restart a service / manager
-        if "status" in message_obj["content"]:
-            # send a message to the OS to pull the latest code from the git repository
-            msg = "git status"
-            current_directory = os.getcwd()
-            repo = Repo(current_directory)
-            status = repo.git.status()
-            send_message_to_redis(f"Git Status: {status}", command="main_server")
-            # running subprocesses
-            running_processes_list = "\n".join([f"{name}: {proc.pid}" for name, proc in running_processes.items()])
-            send_message_to_redis(f"Running processes: {running_processes_list}", command="main_server")
-
-        if "git pull" in message_obj["content"]:
-            # send a message to the OS to pull the latest code from the git repository
-            msg = "git pull origin/master"
-            current_directory = os.getcwd()
-            repo = Repo(current_directory)
-            repo.remotes.origin.pull('master')
-            # we need to update the venv that is running under uv
-            # Sync environment with uv
-            try:
-                subprocess.run(["uv", "sync"], check=True)
-            except subprocess.CalledProcessError as e:
-                print(f"uv sync failed: {e}")
-
-            # Clean up all running processes before restarting the manager service
-            log_info('Cleaning up all processes before restart due to git pull', command="system")
-            cleanup_subprocesses()
-
-            # Now restart the manager service
-            restart_manager_service()
-        if any(cmd in message_obj["content"] for cmd in ["start", "stop", "restart"]):
-            # send a message to the OS to start, stop or restart a service
-            action = message_obj["content"].split()[1] if len(message_obj["content"].split()) > 1 else None
-            service = message_obj["content"].split()[2] if len(message_obj["content"].split()) > 2 else None
-            if service in services_managed:
-                execute_command(command_name=service, action=action)
+# Main loop with error handling for Redis operations
+try:
+    log_info('Starting main Redis pubsub listen loop', command="system")
+    for message in pubsub.listen():
+        if message["type"] == "message":
+            # Handle system.user.live and system.user.offline messages
+            if message["channel"].decode('utf-8') == 'system.user.live':
+                print("Received system.user.live message - Starting all services")
+                is_live = True
+                # Start all services if they're not already running
+                log_info('Starting all services due to system.user.live message', command="system")
+                for service in services_managed:
+                    execute_command(command_name=service, action="start")
+                log_info('System is now LIVE - All services started', command="system")
                 continue
-            if service == "manager":
+
+            if message["channel"].decode('utf-8') == 'system.user.offline':
+                print("Received system.user.offline message - Shutting down all services")
+                is_live = False
+                # Stop all services
+                for service in services_managed:
+                    execute_command(command_name=service, action="stop")
+                log_info('System is now OFFLINE - All services stopped', command="system")
+                continue
+
+            # Handle regular command messages
+            message_obj = json.loads(message['data'].decode('utf-8'))
+            print(f"Chat Command: {message_obj.get('command')} and Message: {message_obj.get('content')}")
+            if not message_obj["author"]["broadcaster"]:
+                send_message_to_redis('🚨 Only the broadcaster can use this command 🚨', command="main_server")
+                continue
+                # sub commands: git pull, start a service, stop a service, restart a service / manager
+            if "status" in message_obj["content"]:
+                # send a message to the OS to pull the latest code from the git repository
+                msg = "git status"
+                current_directory = os.getcwd()
+                repo = Repo(current_directory)
+                status = repo.git.status()
+                send_message_to_redis(f"Git Status: {status}", command="main_server")
+                # running subprocesses
+                running_processes_list = "\n".join([f"{name}: {proc.pid}" for name, proc in running_processes.items()])
+                send_message_to_redis(f"Running processes: {running_processes_list}", command="main_server")
+
+            if "git pull" in message_obj["content"]:
+                # send a message to the OS to pull the latest code from the git repository
+                msg = "git pull origin/master"
+                current_directory = os.getcwd()
+                repo = Repo(current_directory)
+                repo.remotes.origin.pull('master')
+                # we need to update the venv that is running under uv
+                # Sync environment with uv
+                try:
+                    subprocess.run(["uv", "sync"], check=True)
+                except subprocess.CalledProcessError as e:
+                    print(f"uv sync failed: {e}")
+
                 # Clean up all running processes before restarting the manager service
-                log_info('Cleaning up all processes before restart due to manager restart command', command="system")
+                log_info('Cleaning up all processes before restart due to git pull', command="system")
                 cleanup_subprocesses()
 
                 # Now restart the manager service
                 restart_manager_service()
-                continue
-            if service == "all":
-                for service in services_managed:
+            if any(cmd in message_obj["content"] for cmd in ["start", "stop", "restart"]):
+                # send a message to the OS to start, stop or restart a service
+                action = message_obj["content"].split()[1] if len(message_obj["content"].split()) > 1 else None
+                service = message_obj["content"].split()[2] if len(message_obj["content"].split()) > 2 else None
+                if service in services_managed:
                     execute_command(command_name=service, action=action)
+                    continue
+                if service == "manager":
+                    # Clean up all running processes before restarting the manager service
+                    log_info('Cleaning up all processes before restart due to manager restart command', command="system")
+                    cleanup_subprocesses()
+
+                    # Now restart the manager service
+                    restart_manager_service()
+                    continue
+                if service == "all":
+                    for service in services_managed:
+                        execute_command(command_name=service, action=action)
+                    continue
+
+            # Handle manual live/offline setting
+            if "set live" in message_obj["content"]:
+                print("Manual override: Setting system to LIVE")
+                is_live = True
+                # Start all services
+                log_info('Starting all services due to manual "set live" command', command="system")
+                for service in services_managed:
+                    execute_command(command_name=service, action="start")
+                log_info('Manual override: System is now LIVE - All services started', command="system")
                 continue
 
-        # Handle manual live/offline setting
-        if "set live" in message_obj["content"]:
-            print("Manual override: Setting system to LIVE")
-            is_live = True
-            # Start all services
-            log_info('Starting all services due to manual "set live" command', command="system")
-            for service in services_managed:
-                execute_command(command_name=service, action="start")
-            log_info('Manual override: System is now LIVE - All services started', command="system")
-            continue
-
-        if "set offline" in message_obj["content"]:
-            print("Manual override: Setting system to OFFLINE")
-            is_live = False
-            # Stop all services
-            for service in services_managed:
-                execute_command(command_name=service, action="stop")
-            log_info('Manual override: System is now OFFLINE - All services stopped', command="system")
-            continue
+            if "set offline" in message_obj["content"]:
+                print("Manual override: Setting system to OFFLINE")
+                is_live = False
+                # Stop all services
+                for service in services_managed:
+                    execute_command(command_name=service, action="stop")
+                log_info('Manual override: System is now OFFLINE - All services stopped', command="system")
+                continue
+except Exception as e:
+    log_error(f"Error in Redis pubsub listen loop: {e}", command="system")
+    # Clean up before exiting
+    cleanup_subprocesses()
+    # Try to exit gracefully
+    sys.exit(1)
