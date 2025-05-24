@@ -28,7 +28,8 @@ pubsub.subscribe('system.user.live')
 pubsub.subscribe('system.user.offline')
 services_managed =  ["brb","unbrb","discord","shoutout","todolist","collect","invest","give","roomba","steal","lurk","points"]
 services_managed += ["suika","timer","timezone","unlurk","blackjack","gamble","slots","accept","fight"]
-services_managed += ["translate","hug","gameoflife"]
+#services_managed += ["","","gameoflife"]
+services_managed += ["translate","hug"]
 services_managed += ["move_fishing","system_logger","chat_logger","command_logger"]
 manager_service_name = "twitch-manager.service"
 running_processes = {}
