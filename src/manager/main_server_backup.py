@@ -1,18 +1,13 @@
-#!/usr/bin/env python3
 import atexit
 import json
 import signal
 import subprocess
 import sys
-import os
 from git import Repo
+import os
 import redis
 from module.message_utils import send_admin_message_to_redis, send_message_to_redis
 from module.message_utils import log_startup, log_info, log_error, log_debug, log_warning
-
-# Add the parent directory to sys.path to allow importing service_manager
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-from src.manager.service_manager import setup_services, cleanup_services, manage_service, get_service_status, list_active_services
 
 ##########################
 # Configuration
@@ -37,11 +32,10 @@ services_managed += ["suika","timer","timezone","unlurk","blackjack","gamble","s
 services_managed += ["translate","hug"]
 services_managed += ["move_fishing","system_logger","chat_logger","command_logger"]
 manager_service_name = "twitch-manager.service"
+running_processes = {}
 # Track the live status
 is_live = True  # Assume live on startup
 
-# Create a dictionary to map command names to their service names
-service_map = {}
 
 ##########################
 # Exit Function
@@ -54,7 +48,10 @@ def handle_exit(signum, frame):
         print("Successfully unsubscribed from Redis channels")
     except Exception as e:
         print(f"Error unsubscribing from Redis channels: {e}")
-
+    
+    # Always clean up subprocesses
+    cleanup_subprocesses()
+    
     # Place any cleanup code here
     sys.exit(0)  # Exit gracefully
 
@@ -82,39 +79,42 @@ def restart_manager_service():
         print(f"Failed to issue restart command for service '{manager_service_name}'. Error: {e}")
 
 
-def initialize_services():
+def cleanup_subprocesses():
     """
-    Initialize systemd services for all commands in services_managed.
-    This creates service files and builds the service_map dictionary.
+    Terminates all running subprocesses.
+    This function is called automatically when the main script exits.
     """
-    global service_map
+    print("Cleaning up subprocesses...")
+    global running_processes
+    for command_name, process in list(running_processes.items()):
+        if process.poll() is None:  # Check if process is still running
+            try:
+                print(f"Terminating subprocess '{command_name}'...")
+                process.terminate()
+                # Give it some time to terminate gracefully
+                process.wait(timeout=3)
+            except subprocess.TimeoutExpired:
+                print(f"Subprocess '{command_name}' did not terminate, forcing kill...")
+                process.kill()
+            except Exception as e:
+                print(f"Error terminating subprocess '{command_name}': {str(e)}")
+        else:
+            print(f"Subprocess '{command_name}' is already terminated")
 
-    log_info("Initializing systemd services for all commands", command="system")
+        # Remove from running processes dictionary regardless of termination success
+        # This ensures we don't keep references to terminated processes
+        if command_name in running_processes:
+            del running_processes[command_name]
 
-    # Set up services for all commands in services_managed
-    created_services = setup_services(services_managed)
-
-    # Build the service_map dictionary
-    for service_name in created_services:
-        # Extract command name from service name (e.g., "twitch-command-brb.service" -> "brb")
-        command_name = service_name.replace("twitch-command-", "").replace(".service", "")
-        service_map[command_name] = service_name
-
-    # Clean up any services that are no longer needed
-    cleanup_services(created_services)
-
-    log_info(f"Initialized {len(created_services)} systemd services", command="system")
-    return created_services
-
+    # Log the cleanup completion
+    log_info(f"Cleaned up all processes. Running processes count: {len(running_processes)}", command="system")
 
 def execute_command(command_name, action):
     """
-    Manages a command by controlling its systemd service.
-
+    Finds and manages a Python file from the 'commands' subfolder (and subfolders).
     Args:
-        command_name (str): Name of the command (without .py extension)
-        action (str): Action to perform on the service - "start", "stop", or "restart"
-
+        command_name (str): Name of the Python file to execute (without .py extension)
+        action (str): Action to perform on the process - "start", "stop", or "restart"
     Returns:
         bool: True if successful, False otherwise
     """
@@ -122,37 +122,87 @@ def execute_command(command_name, action):
     if action not in ["start", "stop", "restart"]:
         print(f"Error: Invalid action '{action}'. Must be 'start', 'stop', or 'restart'")
         return False
+    global running_processes
+    # Handle stop and restart actions for an already running process
+    if action in ["stop", "restart"] and command_name in running_processes:
+        process = running_processes[command_name]
+        if process.poll() is None:  # Check if process is still running
+            try:
+                process.terminate()
+                # Give it some time to terminate gracefully
+                process.wait(timeout=3)
+                print(f"Stopped process '{command_name}'")
+            except subprocess.TimeoutExpired:
+                print(f"Process '{command_name}' did not terminate, forcing kill...")
+                process.kill()
+            except Exception as e:
+                print(f"Error terminating process '{command_name}': {str(e)}")
+                return False
 
-    # Get the service name for this command
-    if command_name not in service_map:
-        # If the service is not in the map, try to create it
-        log_info(f"Service for '{command_name}' not found in service map, attempting to create it", command="system")
-        created_services = setup_services([command_name])
-        if not created_services:
-            log_error(f"Failed to create service for '{command_name}'", command="system")
-            return False
+        # Remove from running processes dictionary
+        del running_processes[command_name]
 
-        service_name = created_services[0]
-        service_map[command_name] = service_name
-    else:
-        service_name = service_map[command_name]
-
-    # Check if we need to start a service that's already running
-    if action == "start":
-        status = get_service_status(service_name)
-        if status == "active":
-            log_info(f"Service '{service_name}' is already running, not starting a new instance", command="system")
+        # If we're just stopping (not restarting), we're done
+        if action == "stop":
             return True
 
-    # Manage the service
-    result = manage_service(service_name, action)
+    # If we're starting or restarting, find and execute the command file
+    if action in ["start", "restart"]:
+        # Check if the process is already running when action is "start"
+        if action == "start" and command_name in running_processes:
+            process = running_processes[command_name]
+            if process.poll() is None:  # Process is still running
+                log_info(f"Process '{command_name}' is already running with PID {process.pid}, not starting a new instance", command="system")
+                return True
+            else:
+                # Process has terminated, remove it from running_processes
+                del running_processes[command_name]
+                log_info(f"Removed terminated process '{command_name}' from tracking", command="system")
 
-    if result:
-        log_info(f"Successfully {action}ed service '{service_name}'", command="system")
-    else:
-        log_error(f"Failed to {action} service '{service_name}'", command="system")
+        # Get the path to the commands directory
+        commands_dir = os.path.join(os.getcwd(), "commands")
 
-    return result
+        # Check if the commands directory exists
+        if not os.path.isdir(commands_dir):
+            print(f"Error: 'commands' directory not found in {os.getcwd()}")
+            return False
+
+        # Find the command file by recursively searching directories
+        command_file_path = None
+        for root, _, files in os.walk(commands_dir):
+            for file in files:
+                # Check if the filename without extension matches the command_name
+                if file.endswith(".py") and file[:-3] == command_name:
+                    command_file_path = os.path.join(root, file)
+                    break
+            if command_file_path:
+                break
+
+        # Check if the command file was found
+        if command_file_path is None:
+            print(f"Error: Command file '{command_name}.py' not found in commands directory")
+            return False
+
+        try:
+            # Execute the command file as a subprocess
+            process = subprocess.Popen(
+                [sys.executable, command_file_path],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE
+            )
+
+            # Add the process to our tracking dictionary
+            running_processes[command_name] = process
+
+            print(f"Started process '{command_name}'")
+            return True
+
+        except Exception as e:
+            print(f"Error executing '{command_name}.py': {str(e)}")
+            return False
+
+    return False
+
 
 
 ##########################
@@ -162,10 +212,7 @@ def execute_command(command_name, action):
 log_startup('Bunux is online', command="system")
 # Send a message indicating that the system is initially assumed to be live
 log_info('System is initially assumed to be LIVE', command="system")
-
-# Initialize systemd services for all commands
-initialize_services()
-
+atexit.register(cleanup_subprocesses)
 # Start all services since we're assuming the system is live on startup
 log_info('Starting all services on startup', command="system")
 for service in services_managed:
@@ -210,11 +257,9 @@ try:
                 repo = Repo(current_directory)
                 status = repo.git.status()
                 send_message_to_redis(f"Git Status: {status}", command="main_server")
-
-                # Get active services
-                active_services = list_active_services()
-                active_services_list = "\n".join(active_services) if active_services else "No active services"
-                send_message_to_redis(f"Active services: {active_services_list}", command="main_server")
+                # running subprocesses
+                running_processes_list = "\n".join([f"{name}: {proc.pid}" for name, proc in running_processes.items()])
+                send_message_to_redis(f"Running processes: {running_processes_list}", command="main_server")
 
             if "git pull" in message_obj["content"]:
                 # send a message to the OS to pull the latest code from the git repository
@@ -229,33 +274,27 @@ try:
                 except subprocess.CalledProcessError as e:
                     print(f"uv sync failed: {e}")
 
-                # Stop all services before restarting the manager service
-                log_info('Stopping all services before restart due to git pull', command="system")
-                for service in services_managed:
-                    execute_command(command_name=service, action="stop")
+                # Clean up all running processes before restarting the manager service
+                log_info('Cleaning up all processes before restart due to git pull', command="system")
+                cleanup_subprocesses()
 
                 # Now restart the manager service
                 restart_manager_service()
-
             if any(cmd in message_obj["content"] for cmd in ["start", "stop", "restart"]):
                 # send a message to the OS to start, stop or restart a service
                 action = message_obj["content"].split()[1] if len(message_obj["content"].split()) > 1 else None
                 service = message_obj["content"].split()[2] if len(message_obj["content"].split()) > 2 else None
-
                 if service in services_managed:
                     execute_command(command_name=service, action=action)
                     continue
-
                 if service == "manager":
-                    # Stop all services before restarting the manager service
-                    log_info('Stopping all services before restart due to manager restart command', command="system")
-                    for service in services_managed:
-                        execute_command(command_name=service, action="stop")
+                    # Clean up all running processes before restarting the manager service
+                    log_info('Cleaning up all processes before restart due to manager restart command', command="system")
+                    cleanup_subprocesses()
 
                     # Now restart the manager service
                     restart_manager_service()
                     continue
-
                 if service == "all":
                     for service in services_managed:
                         execute_command(command_name=service, action=action)
@@ -280,15 +319,9 @@ try:
                     execute_command(command_name=service, action="stop")
                 log_info('Manual override: System is now OFFLINE - All services stopped', command="system")
                 continue
-
-            # Handle service management commands
-            if "check services" in message_obj["content"]:
-                # Re-initialize services to ensure all are properly set up
-                created_services = initialize_services()
-                send_message_to_redis(f"Services checked and initialized. {len(created_services)} services set up.", command="main_server")
-                continue
-
 except Exception as e:
     log_error(f"Error in Redis pubsub listen loop: {e}", command="system")
+    # Clean up before exiting
+    cleanup_subprocesses()
     # Try to exit gracefully
     sys.exit(1)
