@@ -2,7 +2,7 @@ import time
 
 from flask import Flask, request
 
-from module.message_utils import send_admin_message_to_redis
+from module.message_utils import send_admin_message_to_redis, log_startup
 from module.shared_obs import get_obs_client
 from module.shared_redis import redis_client
 
@@ -167,5 +167,5 @@ def webhook2():
 # Run the "Move: Fishing Origin" filter when the file is enabled
 get_smaller()
 
-send_admin_message_to_redis("Move Fishing command is ready to be used", "move_fishing")
+log_startup("Move Fishing command is ready to be used", "move_fishing" )
 app.run(port=5005, host='0.0.0.0')
