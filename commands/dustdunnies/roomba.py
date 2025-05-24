@@ -12,7 +12,7 @@ from module.redis_user_utils import get_user_data, get_or_create_user
 # Configuration
 ##########################
 # Set the log level for this command
-LOG_LEVEL = "INFO"  # Use "DEBUG", "INFO", "WARNING", "ERROR", or "CRITICAL"
+LOG_LEVEL = "WARNING"  # Use "DEBUG", "INFO", "WARNING", "ERROR", or "CRITICAL"
 
 ##########################
 # Initialize

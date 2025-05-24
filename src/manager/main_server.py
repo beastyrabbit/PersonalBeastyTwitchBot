@@ -90,6 +90,8 @@ def cleanup_subprocesses():
                 process.kill()
             except Exception as e:
                 print(f"Error terminating subprocess '{command_name}': {str(e)}")
+        else:
+            print(f"Subprocess '{command_name}' is already terminated")
 
         # Remove from running processes dictionary regardless of termination success
         # This ensures we don't keep references to terminated processes
@@ -138,6 +140,17 @@ def execute_command(command_name, action):
 
     # If we're starting or restarting, find and execute the command file
     if action in ["start", "restart"]:
+        # Check if the process is already running when action is "start"
+        if action == "start" and command_name in running_processes:
+            process = running_processes[command_name]
+            if process.poll() is None:  # Process is still running
+                log_info(f"Process '{command_name}' is already running with PID {process.pid}, not starting a new instance", command="system")
+                return True
+            else:
+                # Process has terminated, remove it from running_processes
+                del running_processes[command_name]
+                log_info(f"Removed terminated process '{command_name}' from tracking", command="system")
+
         # Get the path to the commands directory
         commands_dir = os.path.join(os.getcwd(), "commands")
 
@@ -193,6 +206,7 @@ log_startup('Bunux is online', command="system")
 log_info('System is initially assumed to be LIVE', command="system")
 atexit.register(cleanup_subprocesses)
 # Start all services since we're assuming the system is live on startup
+log_info('Starting all services on startup', command="system")
 for service in services_managed:
     execute_command(command_name=service, action="start")
 
@@ -203,6 +217,7 @@ for message in pubsub.listen():
             print("Received system.user.live message - Starting all services")
             is_live = True
             # Start all services if they're not already running
+            log_info('Starting all services due to system.user.live message', command="system")
             for service in services_managed:
                 execute_command(command_name=service, action="start")
             log_info('System is now LIVE - All services started', command="system")
@@ -279,6 +294,7 @@ for message in pubsub.listen():
             print("Manual override: Setting system to LIVE")
             is_live = True
             # Start all services
+            log_info('Starting all services due to manual "set live" command', command="system")
             for service in services_managed:
                 execute_command(command_name=service, action="start")
             log_info('Manual override: System is now LIVE - All services started', command="system")
