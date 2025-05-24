@@ -16,12 +16,17 @@ redis_client_env = redis.Redis(host='192.168.50.115', port=6379, db=1)
 pubsub = redis_client.pubsub()
 pubsub.subscribe('twitch.command.system')
 pubsub.subscribe('twitch.command.sys')
+# Subscribe to user live/offline status channels
+pubsub.subscribe('system.user.live')
+pubsub.subscribe('system.user.offline')
 services_managed =  ["brb","unbrb","discord","shoutout","todolist","collect","invest","give","roomba","steal","lurk","points"]
 services_managed += ["suika","timer","timezone","unlurk","blackjack","gamble","slots","accept","fight"]
 services_managed += ["translate","hug","gameoflife"]
 services_managed += ["move_fishing","system_logger","chat_logger","command_logger"]
 manager_service_name = "twitch-manager.service"
 running_processes = {}
+# Track the live status
+is_live = True  # Assume live on startup
 
 
 ##########################
@@ -167,12 +172,35 @@ def execute_command(command_name, action):
 # Main
 ##########################
 send_system_message_to_redis('Bunux is online', command="system")
+# Send a message indicating that the system is initially assumed to be live
+send_system_message_to_redis('System is initially assumed to be LIVE', command="system")
 atexit.register(cleanup_subprocesses)
+# Start all services since we're assuming the system is live on startup
 for service in services_managed:
     execute_command(command_name=service, action="start")
 
 for message in pubsub.listen():
     if message["type"] == "message":
+        # Handle system.user.live and system.user.offline messages
+        if message["channel"].decode('utf-8') == 'system.user.live':
+            print("Received system.user.live message - Starting all services")
+            is_live = True
+            # Start all services if they're not already running
+            for service in services_managed:
+                execute_command(command_name=service, action="start")
+            send_system_message_to_redis('System is now LIVE - All services started', command="system")
+            continue
+
+        if message["channel"].decode('utf-8') == 'system.user.offline':
+            print("Received system.user.offline message - Shutting down all services")
+            is_live = False
+            # Stop all services
+            for service in services_managed:
+                execute_command(command_name=service, action="stop")
+            send_system_message_to_redis('System is now OFFLINE - All services stopped', command="system")
+            continue
+
+        # Handle regular command messages
         message_obj = json.loads(message['data'].decode('utf-8'))
         print(f"Chat Command: {message_obj.get('command')} and Message: {message_obj.get('content')}")
         if not message_obj["author"]["broadcaster"]:
