@@ -6,7 +6,14 @@ import sys
 from git import Repo
 import os
 import redis
-from module.message_utils import send_system_message_to_redis, send_admin_message_to_redis, send_message_to_redis
+from module.message_utils import send_admin_message_to_redis, send_message_to_redis
+from module.message_utils import log_startup, log_info, log_error, log_debug, log_warning
+
+##########################
+# Configuration
+##########################
+# Set the log level for this command
+LOG_LEVEL = "INFO"  # Use "DEBUG", "INFO", "WARNING", "ERROR", or "CRITICAL"
 
 ##########################
 # Initialize
@@ -162,7 +169,8 @@ def execute_command(command_name, action):
 ##########################
 # Main
 ##########################
-send_system_message_to_redis('Bunux is online', command="system")
+# Send startup message
+log_startup('Bunux is online', command="system")
 atexit.register(cleanup_subprocesses)
 for service in services_managed:
     execute_command(command_name=service, action="start")

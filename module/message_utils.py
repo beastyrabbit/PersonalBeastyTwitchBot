@@ -210,29 +210,17 @@ def log_startup(message, command=None, extra_data=None):
 ##########################
 # Messaging Functions
 ##########################
-def send_system_message_to_redis(message, command):
-    """Send a system message to Redis.
-
-    @param message: The message content to send
-    @param command: The command type for the Redis channel
-    """
-    system_message_obj = {
-        "type": "system",
-        "source": "system",
-        "content": message,
-    }
-    redis_client.publish(f'system.{command}.send', json.dumps(system_message_obj))
 
 # Keeping backward compatibility for now
 def send_admin_message_to_redis(message, command):
-    """Deprecated: Use send_system_message_to_redis instead.
+    """Deprecated: Use log_info, log_error, etc. instead.
 
     This function is kept for backward compatibility and will be removed in the future.
 
     @param message: The message content to send
     @param command: The command type for the Redis channel
     """
-    return send_system_message_to_redis(message, command)
+    return log_info(message, command)
 
 def send_message_to_redis(send_message, command=None):
     """Send a chat message to Redis.

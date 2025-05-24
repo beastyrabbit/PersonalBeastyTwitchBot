@@ -5,7 +5,14 @@ import threading
 import logging
 import json
 from module.shared_redis import redis_client_env
-from module.message_utils import send_system_message_to_redis, send_admin_message_to_redis
+from module.message_utils import send_admin_message_to_redis
+from module.message_utils import log_startup, log_info, log_error, log_debug, log_warning, log_critical
+
+##########################
+# Configuration
+##########################
+# Set the log level for this module
+LOG_LEVEL = "INFO"  # Use "DEBUG", "INFO", "WARNING", "ERROR", or "CRITICAL"
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -110,7 +117,7 @@ def get_obs_client():
 
         # Send system message after 5 failed attempts if not already notified
         if obs_connection_status["failed_attempts"] >= 5 and not obs_connection_status["notified"]:
-            send_system_message_to_redis(f"Unable to connect to OBS after {obs_connection_status['failed_attempts']} attempts. Please check if OBS is running and configured correctly.", "obs")
+            log_error(f"Unable to connect to OBS after {obs_connection_status['failed_attempts']} attempts. Please check if OBS is running and configured correctly.", "obs")
             obs_connection_status["notified"] = True
 
         obs_connection_status["is_connecting"] = False

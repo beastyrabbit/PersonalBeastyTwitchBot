@@ -2,7 +2,7 @@ import json
 
 import redis
 
-from module.message_utils import send_system_message_to_redis, send_message_to_redis, register_exit_handler
+from module.message_utils import send_message_to_redis, register_exit_handler
 from module.message_utils import log_startup, log_info, log_error, log_debug, log_warning
 
 ##########################
@@ -89,7 +89,6 @@ def write_unlurk_to_redis(author_obj):
 ##########################
 # Send startup message
 log_startup("Unlurk command is ready to be used", "unlurk")
-send_system_message_to_redis("Unlurk command is running", "unlurk")
 
 # Main message loop
 for message in pubsub.listen():
@@ -112,4 +111,3 @@ for message in pubsub.listen():
                 "traceback": str(e.__traceback__),
                 "message_data": str(message.get('data', 'N/A'))
             })
-            send_system_message_to_redis(f"Error in unlurk command: {str(e)}", "unlurk")

@@ -1,7 +1,7 @@
 import json
 import threading
 
-from module.message_utils import send_system_message_to_redis, send_message_to_redis, register_exit_handler
+from module.message_utils import send_message_to_redis, register_exit_handler
 from module.message_utils import log_startup, log_info, log_error, log_debug, log_warning
 from module.shared_redis import redis_client, pubsub
 
@@ -128,7 +128,6 @@ def setup_timer(username, time_name, time_in_minutes):
 ##########################
 # Send startup message
 log_startup("Timer command is ready to be used", "timer")
-send_system_message_to_redis("Timer command is running", "timer")
 
 # Main message loop
 for message in pubsub.listen():
@@ -178,4 +177,3 @@ for message in pubsub.listen():
                 "traceback": str(e.__traceback__),
                 "message_data": str(message.get('data', 'N/A'))
             })
-            send_system_message_to_redis(f"Error in timer command: {str(e)}", "timer")

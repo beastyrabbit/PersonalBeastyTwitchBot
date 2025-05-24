@@ -4,7 +4,7 @@ from datetime import datetime
 
 from openai import OpenAI
 
-from module.message_utils import send_system_message_to_redis, send_message_to_redis, register_exit_handler
+from module.message_utils import send_message_to_redis, register_exit_handler
 from module.message_utils import log_startup, log_info, log_error, log_debug, log_warning
 from module.shared_redis import redis_client, pubsub, redis_client_env
 
@@ -498,7 +498,6 @@ def handle_accept_command(message_obj):
         except Exception as e:
             error_msg = f"AI narration failed: {e}"
             log_error(error_msg, "accept", {"error": str(e)})
-            send_system_message_to_redis(error_msg, "fight")
 
         if winner:
             log_info(f"{winner} won the fight against {loser}", "accept", {
@@ -539,7 +538,6 @@ def handle_accept_command(message_obj):
 ##########################
 # Send startup message
 log_startup("Accept command is ready to be used", "accept")
-send_system_message_to_redis("Accept command is running", "fight")
 
 # Main message loop
 for message in pubsub.listen():
@@ -561,4 +559,3 @@ for message in pubsub.listen():
                 "traceback": str(e.__traceback__),
                 "message_data": str(message.get('data', 'N/A'))
             })
-            send_system_message_to_redis(f"Error in accept command: {str(e)}", "fight")

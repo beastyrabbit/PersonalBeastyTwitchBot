@@ -2,7 +2,7 @@ import json
 
 import redis
 
-from module.message_utils import send_system_message_to_redis, send_message_to_redis, register_exit_handler
+from module.message_utils import send_message_to_redis, register_exit_handler
 from module.message_utils import log_startup, log_info, log_error, log_debug, log_warning
 
 ##########################
@@ -90,7 +90,6 @@ def write_lurk_to_redis(author_obj):
 ##########################
 # Send startup message
 log_startup("Lurk command is ready to be used", "lurk")
-send_system_message_to_redis("Lurk command is running", "lurk")
 
 # Main message loop
 for message in pubsub.listen():
@@ -113,4 +112,3 @@ for message in pubsub.listen():
                 "traceback": str(e.__traceback__),
                 "message_data": str(message.get('data', 'N/A'))
             })
-            send_system_message_to_redis(f"Error in lurk command: {str(e)}", "lurk")

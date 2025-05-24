@@ -2,7 +2,7 @@ import json
 import random
 from datetime import timedelta, datetime
 
-from module.message_utils import send_message_to_redis, register_exit_handler, send_system_message_to_redis
+from module.message_utils import send_message_to_redis, register_exit_handler
 from module.message_utils import log_startup, log_info, log_error, log_debug, log_warning
 from module.shared_redis import redis_client, pubsub
 from module.user_utils import normalize_username, user_exists
@@ -149,7 +149,6 @@ def handle_user_data(user_obj, rnd_number_for_user):
 ##########################
 # Send startup message
 log_startup("Roomba command is ready to be used", "roomba")
-send_system_message_to_redis("Roomba command is running", "roomba")
 
 # Main message loop
 for message in pubsub.listen():

@@ -15,7 +15,7 @@ from datetime import datetime, timedelta
 
 from module.shared_redis import redis_client, pubsub
 
-from module.message_utils import send_system_message_to_redis, send_message_to_redis, register_exit_handler
+from module.message_utils import send_message_to_redis, register_exit_handler
 from module.message_utils import log_startup, log_info, log_error, log_debug, log_warning
 
 ##########################
@@ -72,7 +72,6 @@ def check_timeout(username):
                 log_info(f"User {username} still on cooldown for {remaining} seconds", "slots", {
                     "cooldown_remaining": remaining
                 })
-                send_system_message_to_redis(f"User {username} still has {remaining} seconds in timeout for slots", "slots")
                 return True
 
     except Exception as e:
@@ -295,14 +294,12 @@ def handle_slots_command(message_obj):
             "user": message_obj.get("author", {}).get("display_name", "Unknown"),
             "content": message_obj.get("content", "")
         })
-        send_system_message_to_redis(f"Error in slots command: {str(e)}", "slots")
 
 ##########################
 # Main
 ##########################
 # Send startup message
 log_startup("Slots command is ready to be used", "slots")
-send_system_message_to_redis("Slots command is running", "slots")
 
 # Main message loop
 for message in pubsub.listen():
@@ -324,4 +321,3 @@ for message in pubsub.listen():
                 "traceback": str(e.__traceback__),
                 "message_data": str(message.get('data', 'N/A'))
             })
-            send_system_message_to_redis(f"Error in slots command: {str(e)}", "slots")

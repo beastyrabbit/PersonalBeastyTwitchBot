@@ -20,7 +20,7 @@ from threading import Thread, Lock
 
 from module.shared_redis import redis_client, pubsub
 
-from module.message_utils import send_system_message_to_redis, send_message_to_redis, register_exit_handler
+from module.message_utils import send_message_to_redis, register_exit_handler
 from module.message_utils import log_startup, log_info, log_error, log_debug, log_warning
 
 ##########################
@@ -416,7 +416,6 @@ def handle_blackjack(message_obj):
             "user": message_obj.get("author", {}).get("display_name", "Unknown"),
             "content": message_obj.get("content", "")
         })
-        send_system_message_to_redis(f"Error in blackjack command: {str(e)}", "blackjack")
 
 def handle_join(state, players, username, username_lower, mention, user_key):
     """Handle the join action for blackjack"""
@@ -677,7 +676,6 @@ def handle_split(state, players, username_lower, mention):
 ##########################
 # Send startup message
 log_startup("Blackjack command is ready to be used", "blackjack")
-send_system_message_to_redis("Blackjack command is running", "blackjack")
 
 # Main message loop
 for message in pubsub.listen():
@@ -698,4 +696,3 @@ for message in pubsub.listen():
                 "traceback": str(e.__traceback__),
                 "message_data": str(message.get('data', 'N/A'))
             })
-            send_system_message_to_redis(f"Error in blackjack command: {str(e)}", "blackjack")

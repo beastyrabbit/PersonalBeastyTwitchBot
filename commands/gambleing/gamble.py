@@ -14,7 +14,7 @@ from datetime import datetime, timedelta
 
 from module.shared_redis import redis_client, pubsub
 
-from module.message_utils import send_system_message_to_redis, send_message_to_redis, register_exit_handler
+from module.message_utils import send_message_to_redis, register_exit_handler
 from module.message_utils import log_startup, log_info, log_error, log_debug, log_warning
 
 ##########################
@@ -68,7 +68,6 @@ def check_timeout(username):
                 log_info(f"User {username} still on cooldown for {remaining} seconds", "gamble", {
                     "cooldown_remaining": remaining
                 })
-                send_system_message_to_redis(f"User {username} still has {remaining} seconds in timeout for gambling", "gamble")
                 return True
 
     except Exception as e:
@@ -207,14 +206,12 @@ def handle_gamble(message_obj):
             "user": message_obj.get("author", {}).get("display_name", "Unknown"),
             "content": message_obj.get("content", "")
         })
-        send_system_message_to_redis(f"Error in gamble command: {str(e)}", "gamble")
 
 ##########################
 # Main
 ##########################
 # Send startup message
 log_startup("Gamble command is ready to be used", "gamble")
-send_system_message_to_redis("Gamble command is running", "gamble")
 
 # Main message loop
 for message in pubsub.listen():
@@ -235,4 +232,3 @@ for message in pubsub.listen():
                 "traceback": str(e.__traceback__),
                 "message_data": str(message.get('data', 'N/A'))
             })
-            send_system_message_to_redis(f"Error in gamble command: {str(e)}", "gamble")

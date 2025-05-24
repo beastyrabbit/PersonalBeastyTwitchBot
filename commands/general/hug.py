@@ -3,7 +3,7 @@ import random
 
 from module.shared_redis import pubsub
 
-from module.message_utils import send_system_message_to_redis, send_message_to_redis, register_exit_handler
+from module.message_utils import send_message_to_redis, register_exit_handler
 from module.message_utils import log_startup, log_info, log_error, log_debug, log_warning
 
 ##########################
@@ -104,7 +104,6 @@ def handle_hug_command(message_obj):
 ##########################
 # Send startup message
 log_startup("Hug command is ready to be used", "hug")
-send_system_message_to_redis("Hug command is running", "hug")
 
 # Main message loop
 for message in pubsub.listen():
@@ -128,4 +127,3 @@ for message in pubsub.listen():
                 "traceback": str(e.__traceback__),
                 "message_data": str(message.get('data', 'N/A'))
             })
-            send_system_message_to_redis(f"Error in hug command: {str(e)}", "hug")

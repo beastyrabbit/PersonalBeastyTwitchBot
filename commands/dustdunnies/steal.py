@@ -2,7 +2,7 @@ import json
 
 import numpy as np
 
-from module.message_utils import send_system_message_to_redis, send_message_to_redis, register_exit_handler
+from module.message_utils import send_message_to_redis, register_exit_handler
 from module.message_utils import log_startup, log_info, log_error, log_debug, log_warning
 from module.shared_redis import redis_client, pubsub
 from module.user_utils import normalize_username, user_exists
@@ -172,7 +172,6 @@ def generate_rnd_amount_to_steal() -> int:
 ##########################
 # Send startup message
 log_startup("Steal command is ready to be used", "steal")
-send_system_message_to_redis('Steal command is running', 'steal')
 
 # Main message loop
 for message in pubsub.listen():

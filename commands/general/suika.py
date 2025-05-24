@@ -1,7 +1,7 @@
 import json
 import threading
 
-from module.message_utils import send_system_message_to_redis, send_message_to_redis, register_exit_handler
+from module.message_utils import send_message_to_redis, register_exit_handler
 from module.message_utils import log_startup, log_info, log_error, log_debug, log_warning
 from module.shared_obs import get_obs_client
 from module.shared_redis import redis_client, pubsub
@@ -252,7 +252,6 @@ log_startup("Suika command is ready to be used", "suika")
 # Run the "Move: Sukia Origin" filter when the file is enabled
 try:
     get_smaller()
-    send_system_message_to_redis("Suika command is running", "suika")
 except Exception as e:
     log_error(f"Error during startup: {e}", "suika", {"error": str(e)})
 
@@ -305,4 +304,3 @@ for message in pubsub.listen():
                 "traceback": str(e.__traceback__),
                 "message_data": str(message.get('data', 'N/A'))
             })
-            send_system_message_to_redis(f"Error in suika command: {str(e)}", "suika")

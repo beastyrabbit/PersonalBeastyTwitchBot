@@ -3,7 +3,7 @@ from datetime import datetime
 
 import redis
 import requests
-from module.message_utils import send_system_message_to_redis, send_admin_message_to_redis, send_message_to_redis
+from module.message_utils import send_admin_message_to_redis, send_message_to_redis
 
 ##########################
 # Initialize

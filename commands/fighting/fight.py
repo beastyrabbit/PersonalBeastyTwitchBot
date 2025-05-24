@@ -3,7 +3,7 @@ from datetime import datetime
 
 from module.shared_redis import redis_client, pubsub
 
-from module.message_utils import send_system_message_to_redis, send_message_to_redis, register_exit_handler
+from module.message_utils import send_message_to_redis, register_exit_handler
 from module.message_utils import log_startup, log_info, log_error, log_debug, log_warning
 
 ##########################
@@ -190,7 +190,6 @@ def handle_fight_command(message_obj):
 ##########################
 # Send startup message
 log_startup("Fight command is ready to be used", "fight")
-send_system_message_to_redis("Fight command is running", "fight")
 
 # Main message loop
 for message in pubsub.listen():
@@ -212,4 +211,3 @@ for message in pubsub.listen():
                 "traceback": str(e.__traceback__),
                 "message_data": str(message.get('data', 'N/A'))
             })
-            send_system_message_to_redis(f"Error in fight command: {str(e)}", "fight")

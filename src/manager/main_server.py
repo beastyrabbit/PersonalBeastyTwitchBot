@@ -6,7 +6,14 @@ import sys
 from git import Repo
 import os
 import redis
-from module.message_utils import send_system_message_to_redis, send_admin_message_to_redis, send_message_to_redis
+from module.message_utils import send_admin_message_to_redis, send_message_to_redis
+from module.message_utils import log_startup, log_info, log_error, log_debug, log_warning
+
+##########################
+# Configuration
+##########################
+# Set the log level for this command
+LOG_LEVEL = "INFO"  # Use "DEBUG", "INFO", "WARNING", "ERROR", or "CRITICAL"
 
 ##########################
 # Initialize
@@ -171,9 +178,10 @@ def execute_command(command_name, action):
 ##########################
 # Main
 ##########################
-send_system_message_to_redis('Bunux is online', command="system")
+# Send startup messages
+log_startup('Bunux is online', command="system")
 # Send a message indicating that the system is initially assumed to be live
-send_system_message_to_redis('System is initially assumed to be LIVE', command="system")
+log_info('System is initially assumed to be LIVE', command="system")
 atexit.register(cleanup_subprocesses)
 # Start all services since we're assuming the system is live on startup
 for service in services_managed:
@@ -188,7 +196,7 @@ for message in pubsub.listen():
             # Start all services if they're not already running
             for service in services_managed:
                 execute_command(command_name=service, action="start")
-            send_system_message_to_redis('System is now LIVE - All services started', command="system")
+            log_info('System is now LIVE - All services started', command="system")
             continue
 
         if message["channel"].decode('utf-8') == 'system.user.offline':
@@ -197,7 +205,7 @@ for message in pubsub.listen():
             # Stop all services
             for service in services_managed:
                 execute_command(command_name=service, action="stop")
-            send_system_message_to_redis('System is now OFFLINE - All services stopped', command="system")
+            log_info('System is now OFFLINE - All services stopped', command="system")
             continue
 
         # Handle regular command messages
@@ -253,7 +261,7 @@ for message in pubsub.listen():
             # Start all services
             for service in services_managed:
                 execute_command(command_name=service, action="start")
-            send_system_message_to_redis('Manual override: System is now LIVE - All services started', command="system")
+            log_info('Manual override: System is now LIVE - All services started', command="system")
             continue
 
         if "set offline" in message_obj["content"]:
@@ -262,5 +270,5 @@ for message in pubsub.listen():
             # Stop all services
             for service in services_managed:
                 execute_command(command_name=service, action="stop")
-            send_system_message_to_redis('Manual override: System is now OFFLINE - All services stopped', command="system")
+            log_info('Manual override: System is now OFFLINE - All services stopped', command="system")
             continue
